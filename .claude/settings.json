@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(uv run:*)",
+      "Bash(uv add:*)",
+      "Bash(uv sync:*)",
+      "Bash(uv init:*)",
+      "Bash(npm run:*)",
+      "Bash(npm install:*)",
+      "Bash(npm create:*)",
+      "Bash(npx tsc:*)",
+      "Bash(npx openapi-typescript:*)",
+      "Bash(curl http://localhost:8000/*)",
+      "Bash(psql:*)",
+      "Bash(git status)",
+      "Bash(git diff:*)",
+      "Bash(git log:*)"
+    ],
+    "ask": [
+      "Edit(./backend/app/models.py)",
+      "Write(./backend/app/models.py)",
+      "Edit(./backend/alembic/**)",
+      "Write(./backend/alembic/**)"
+    ],
+    "deny": [
+      "Read(./backend/.env)",
+      "Read(./.env)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "WebFetch"
+    ]
+  }
+}

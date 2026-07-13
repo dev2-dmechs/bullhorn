@@ -1,0 +1,25 @@
+# Secrets — Bullhorn client credentials live here
+.env
+.env.*
+!.env.example
+
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Node
+node_modules/
+dist/
+.vite/
+
+# Editors / OS
+.DS_Store
+.idea/
+*.swp
+
+# Claude
+.claude/settings.local.json
