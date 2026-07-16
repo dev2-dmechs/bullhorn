@@ -16,6 +16,13 @@ node_modules/
 dist/
 .vite/
 
+# Never commit fetched candidate data. Rule 1 is the deliverable — this is a backstop
+# against a debugging dump (a raw Bullhorn response, a scratch script's output) being
+# committed by accident. Fixtures under backend/fixtures/ ARE tracked and must be fake.
+scratch/
+tmp/
+*.dump
+
 # Editors / OS
 .DS_Store
 .idea/

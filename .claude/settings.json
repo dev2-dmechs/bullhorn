@@ -6,16 +6,29 @@
       "Bash(uv add:*)",
       "Bash(uv sync:*)",
       "Bash(uv init:*)",
+      "Bash(cd backend && uv run:*)",
+      "Bash(cd backend && uv add:*)",
+      "Bash(cd backend && uv sync:*)",
+      "Bash(cd backend && uv init:*)",
       "Bash(npm run:*)",
       "Bash(npm install:*)",
       "Bash(npm create:*)",
       "Bash(npx tsc:*)",
       "Bash(npx openapi-typescript:*)",
+      "Bash(cd frontend && npm run:*)",
+      "Bash(cd frontend && npm install:*)",
+      "Bash(cd frontend && npm create:*)",
+      "Bash(cd frontend && npx tsc:*)",
+      "Bash(cd frontend && npx openapi-typescript:*)",
       "Bash(curl http://localhost:8000/*)",
+      "Bash(curl -s http://localhost:8000/*)",
+      "Bash(curl -i http://localhost:8000/*)",
+      "Bash(curl -sS http://localhost:8000/*)",
       "Bash(psql:*)",
       "Bash(git status)",
       "Bash(git diff:*)",
-      "Bash(git log:*)"
+      "Bash(git log:*)",
+      "Bash(git ls-files:*)"
     ],
     "ask": [
       "Edit(./backend/app/models.py)",
@@ -27,7 +40,8 @@
       "Read(./backend/.env)",
       "Read(./.env)",
       "Read(./**/.env)",
-      "Read(./**/.env.*)",
+      "Read(./**/.env.local)",
+      "Read(./**/.env.production)",
       "WebFetch"
     ]
   }
