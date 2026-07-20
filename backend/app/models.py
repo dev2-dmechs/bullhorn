@@ -33,7 +33,18 @@ class BusinessSector(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
-    bh_category_id: Mapped[int] = mapped_column(Integer)
+    bh_business_sector_id: Mapped[int] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(String(255))
 
-    __table_args__ = (UniqueConstraint("company_id", "bh_category_id"),)
+    __table_args__ = (UniqueConstraint("company_id", "bh_business_sector_id"),)
+
+
+class Skill(Base):
+    __tablename__ = "skills"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
+    bh_skill_id: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(255))
+
+    __table_args__ = (UniqueConstraint("company_id", "bh_skill_id"),)

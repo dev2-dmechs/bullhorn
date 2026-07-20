@@ -17,12 +17,15 @@ class TaxonomyOption(BaseModel):
 
 class CandidateSearchRequest(BaseModel):
     category_ids: list[int] = Field(min_length=1)
+    skill_ids: list[int] = Field(default_factory=list)
+    business_sector_ids: list[int] = Field(default_factory=list)
 
 
 class AnonymisedCandidate(BaseModel):
     external_id: str
     company_id: str
     category: str | None
+    business_sector: str | None
     owner_name: str | None
 
 

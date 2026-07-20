@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
 from app.config import get_settings
 from app.database import get_db
-from app.models import BusinessSector, Category, Company
+from app.models import BusinessSector, Category, Company, Skill
 from app.schemas import ConnectionRead, TaxonomyOption
 
 log = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ async def list_business_sectors(
         )
         rows = cached.all()
         if rows:
-            return [TaxonomyOption(id=row.bh_category_id, name=row.name) for row in rows]
+            return [TaxonomyOption(id=row.bh_business_sector_id, name=row.name) for row in rows]
 
     client = LiveBullhornClient(company_id=company.id, db=db)
     try:
@@ -94,8 +94,33 @@ async def list_business_sectors(
 
     await db.execute(delete(BusinessSector).where(BusinessSector.company_id == company.id))
     db.add_all(
-        BusinessSector(company_id=company.id, bh_category_id=s["id"], name=s["name"])
+        BusinessSector(company_id=company.id, bh_business_sector_id=s["id"], name=s["name"])
         for s in sectors
     )
     await db.commit()
     return [TaxonomyOption(id=s["id"], name=s["name"]) for s in sectors]
+
+
+@router.get("/{company_id}/skills", response_model=list[TaxonomyOption])
+async def list_skills(
+    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
+) -> list[TaxonomyOption]:
+    company = await _company(company_id, db)
+
+    if not refresh:
+        cached = await db.scalars(select(Skill).where(Skill.company_id == company.id))
+        rows = cached.all()
+        if rows:
+            return [TaxonomyOption(id=row.bh_skill_id, name=row.name) for row in rows]
+
+    client = LiveBullhornClient(company_id=company.id, db=db)
+    try:
+        skills = await client.list_skills()
+    except BullhornAuthError as exc:
+        log.warning("Company %s: skill lookup failed", company.id)
+        raise HTTPException(status_code=502, detail="Bullhorn skill lookup failed") from exc
+
+    await db.execute(delete(Skill).where(Skill.company_id == company.id))
+    db.add_all(Skill(company_id=company.id, bh_skill_id=s["id"], name=s["name"]) for s in skills)
+    await db.commit()
+    return [TaxonomyOption(id=s["id"], name=s["name"]) for s in skills]

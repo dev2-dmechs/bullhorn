@@ -15,7 +15,7 @@ TIMEOUT = httpx.Timeout(30.0)
 MAX_AUTH_REDIRECTS = 5
 PING_PATH = "ping"
 MAX_CANDIDATES = 500
-CANDIDATE_SEARCH_FIELDS = "id,categories,owner,status"
+CANDIDATE_SEARCH_FIELDS = "id,categories,businessSectors,owner,status"
 
 
 class BullhornAuthError(RuntimeError):
@@ -175,8 +175,28 @@ class LiveBullhornClient:
         data: list[dict[str, Any]] = payload.get("data", [])
         return data
 
-    async def search_candidates(self, category_ids: list[int]) -> tuple[list[dict[str, Any]], int]:
-        query = f"categories.id:({' OR '.join(str(i) for i in category_ids)})"
+    async def list_skills(self) -> list[dict[str, Any]]:
+        payload = await self._get(
+            "query/Skill",
+            {"where": "id>0", "enabled": True, "fields": "id,name", "count": "500"},
+        )
+        data: list[dict[str, Any]] = payload.get("data", [])
+        return data
+
+    async def search_candidates(
+        self,
+        category_ids: list[int],
+        skill_ids: list[int] | None = None,
+        business_sector_ids: list[int] | None = None,
+    ) -> tuple[list[dict[str, Any]], int]:
+        clauses = [f"categories.id:({' OR '.join(str(i) for i in category_ids)})"]
+        if skill_ids:
+            clauses.append(f"primarySkills.id:({' OR '.join(str(i) for i in skill_ids)})")
+        if business_sector_ids:
+            clauses.append(
+                f"businessSectors.id:({' OR '.join(str(i) for i in business_sector_ids)})"
+            )
+        query = " AND ".join(clauses)
 
         payload = await self._get(
             "search/Candidate",
