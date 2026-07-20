@@ -10,7 +10,7 @@ from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
 from app.config import get_settings
 from app.database import get_db
 from app.models import BusinessSector, Category, Company, Skill
-from app.schemas import BusinessSectorsSchema, CategorySchema, ConnectionRead, TaxonomyOption
+from app.schemas import ConnectionRead
 
 log = logging.getLogger(__name__)
 
@@ -52,31 +52,71 @@ async def check_connection(company_id: str, db: AsyncSession = Depends(get_db)) 
 @router.get("/{company_id}/business-sectors")
 async def list_business_sectors(
     company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
-):
+) -> list[BusinessSector]:
     company = await _company(company_id, db)
 
-    if not refresh:
-        cached = await db.scalars(
-            select(BusinessSector).where(BusinessSector.company_id == company.id)
-        )
-        rows = cached.all()
-        if rows:
-            return [TaxonomyOption(id=row.bh_business_sector_id, name=row.name) for row in rows]
+    if refresh:
+        client = LiveBullhornClient(company_id=company.id, db=db)
+        try:
+            sectors = await client.list_business_sectors()
+            await _create_update_business_sectors(db, company.id, sectors)
+        except BullhornAuthError as exc:
+            raise HTTPException(
+                status_code=502, detail="Bullhorn business sector lookup failed"
+            ) from exc
 
-    client = LiveBullhornClient(company_id=company.id, db=db)
-    try:
-        sectors = await client.list_business_sectors()
-    except BullhornAuthError as exc:
-        print(exc)
-        log.warning("Company %s: business sector lookup failed", company.id)
-        raise HTTPException(
-            status_code=502, detail="Bullhorn business sector lookup failed"
-        ) from exc
+    records = await _get_business_sectors(db, company.id)
+    return records
 
-    await db.execute(delete(BusinessSector).where(BusinessSector.company_id == company.id))
+
+@router.get("/{company_id}/categories")
+async def list_categories(
+    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
+) -> list[Category]:
+    company = await _company(company_id, db)
+
+    if refresh:
+        client = LiveBullhornClient(company_id=company.id, db=db)
+        try:
+            categories = await client.list_categories()
+            await _create_update_categories(db, company.id, categories)
+        except BullhornAuthError as exc:
+            log.warning("Company %s: category lookup failed", company.id)
+            raise HTTPException(status_code=502, detail="Bullhorn category lookup failed") from exc
+
+    return await _get_categories(db, company.id)
+
+
+@router.get("/{company_id}/skills")
+async def list_skills(
+    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
+) -> list[Skill]:
+    company = await _company(company_id, db)
+
+    if refresh:
+        client = LiveBullhornClient(company_id=company.id, db=db)
+        try:
+            skills = await client.list_skills()
+            await _create_update_skills(db, company.id, skills)
+        except BullhornAuthError as exc:
+            log.warning("Company %s: skill lookup failed", company.id)
+            raise HTTPException(status_code=502, detail="Bullhorn skill lookup failed") from exc
+
+    return await _get_skills(db, company.id)
+
+
+async def _get_business_sectors(db: AsyncSession, company_id: str) -> list[BusinessSector]:
+    cached = await db.scalars(select(BusinessSector).where(BusinessSector.company_id == company_id))
+    return list(cached.all())
+
+
+async def _create_update_business_sectors(
+    db: AsyncSession, company_id: str, sectors: list[dict[str, Any]]
+) -> None:
+    await db.execute(delete(BusinessSector).where(BusinessSector.company_id == company_id))
     db.add_all(
         BusinessSector(
-            company_id=company.id,
+            company_id=company_id,
             bh_business_sector_id=s["id"],
             name=s["name"],
             date_added=_parse_bh_timestamp(s.get("dateAdded")),
@@ -84,48 +124,32 @@ async def list_business_sectors(
         for s in sectors
     )
     await db.commit()
-    return [
-        BusinessSectorsSchema(
-            id=s["id"], name=s["name"], date_added=_parse_bh_timestamp(s.get("dateAdded"))
-        )
-        for s in sectors
-    ]
 
 
-@router.get("/{company_id}/categories")
-async def list_categories(
-    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
-):
-    company = await _company(company_id, db)
+def _bh_association_ids(association: dict[str, Any] | None) -> list[int]:
+    if not association:
+        return []
+    return [item["id"] for item in association.get("data", [])]
 
-    if not refresh:
-        cached = await db.scalars(select(Category).where(Category.company_id == company.id))
-        rows = cached.all()
-        if rows:
-            return [TaxonomyOption(id=row.bh_category_id, name=row.name) for row in rows]
 
-    client = LiveBullhornClient(company_id=company.id, db=db)
-    try:
-        categories = await client.list_categories()
-    except BullhornAuthError as exc:
-        log.warning("Company %s: category lookup failed", company.id)
-        raise HTTPException(status_code=502, detail="Bullhorn category lookup failed") from exc
+async def _get_categories(db: AsyncSession, company_id: str) -> list[Category]:
+    cached = await db.scalars(select(Category).where(Category.company_id == company_id))
+    return list(cached.all())
 
-    def _ids(association: dict[str, Any] | None) -> list[int]:
-        if not association:
-            return []
-        return [item["id"] for item in association.get("data", [])]
 
-    await db.execute(delete(Category).where(Category.company_id == company.id))
+async def _create_update_categories(
+    db: AsyncSession, company_id: str, categories: list[dict[str, Any]]
+) -> None:
+    await db.execute(delete(Category).where(Category.company_id == company_id))
     db.add_all(
         Category(
-            company_id=company.id,
+            company_id=company_id,
             bh_category_id=c["id"],
             name=c["name"],
             description=c.get("description"),
             enabled=c.get("enabled", True),
-            skills=_ids(c.get("skills")),
-            specialties=_ids(c.get("specialties")),
+            skills=_bh_association_ids(c.get("skills")),
+            specialties=_bh_association_ids(c.get("specialties")),
             type=c.get("type"),
             date_added=_parse_bh_timestamp(c.get("dateAdded")),
             occupation=c.get("occupation"),
@@ -133,42 +157,16 @@ async def list_categories(
         for c in categories
     )
     await db.commit()
-    return [
-        CategorySchema(
-            id=c["id"],
-            name=c["name"],
-            description=c.get("description"),
-            enabled=c.get("enabled", True),
-            skills=_ids(c.get("skills")),
-            specialties=_ids(c.get("specialties")),
-            type=c.get("type"),
-            date_added=_parse_bh_timestamp(c.get("dateAdded")),
-            occupation=c.get("occupation"),
-        )
-        for c in categories
-    ]
 
 
-@router.get("/{company_id}/skills")
-async def list_skills(
-    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
-) -> list[TaxonomyOption]:
-    company = await _company(company_id, db)
+async def _get_skills(db: AsyncSession, company_id: str) -> list[Skill]:
+    cached = await db.scalars(select(Skill).where(Skill.company_id == company_id))
+    return list(cached.all())
 
-    if not refresh:
-        cached = await db.scalars(select(Skill).where(Skill.company_id == company.id))
-        rows = cached.all()
-        if rows:
-            return [TaxonomyOption(id=row.bh_skill_id, name=row.name) for row in rows]
 
-    client = LiveBullhornClient(company_id=company.id, db=db)
-    try:
-        skills = await client.list_skills()
-    except BullhornAuthError as exc:
-        log.warning("Company %s: skill lookup failed", company.id)
-        raise HTTPException(status_code=502, detail="Bullhorn skill lookup failed") from exc
-
-    await db.execute(delete(Skill).where(Skill.company_id == company.id))
-    db.add_all(Skill(company_id=company.id, bh_skill_id=s["id"], name=s["name"]) for s in skills)
+async def _create_update_skills(
+    db: AsyncSession, company_id: str, skills: list[dict[str, Any]]
+) -> None:
+    await db.execute(delete(Skill).where(Skill.company_id == company_id))
+    db.add_all(Skill(company_id=company_id, bh_skill_id=s["id"], name=s["name"]) for s in skills)
     await db.commit()
-    return [TaxonomyOption(id=s["id"], name=s["name"]) for s in skills]
