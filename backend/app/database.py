@@ -21,13 +21,6 @@ async def get_db() -> AsyncIterator[AsyncSession]:
 
 
 async def init_db() -> None:
-    """Create the schema and seed the two tenants. Runs at startup.
-
-    There is no Alembic here by choice. `create_all` only ever CREATES missing tables — it
-    will not ALTER an existing one. So if a column is ever added to `Company`, the change
-    will silently not appear in a database that already has the table, and it must be
-    applied by hand (or the table dropped and recreated).
-    """
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
         await connection.execute(

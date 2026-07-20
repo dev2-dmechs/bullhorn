@@ -1,30 +1,30 @@
+import logging
+
 from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bullhorn.live import LiveBullhornClient
+from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
 from app.config import get_settings
 from app.database import get_db
-from app.models import Company
-from app.schemas import ConnectionRead
+from app.models import BusinessSector, Category, Company
+from app.schemas import ConnectionRead, TaxonomyOption
+
+log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/companies", tags=["companies"])
 
 
-@router.get("/{company_id}/connection", response_model=ConnectionRead)
-async def check_connection(
-    company_id: str, db: AsyncSession = Depends(get_db)
-) -> ConnectionRead:
-    """Is the Bullhorn OAuth handshake for this tenant working?
-
-    This is the verification surface for the auth integration. It performs a real
-    authenticated read against the tenant's Bullhorn and reports whether it succeeded.
-
-    It deliberately returns NO token and NO credential — only whether the handshake worked
-    and whether we have a restUrl cached. Tokens are never returned in an API response.
-    """
+async def _company(company_id: str, db: AsyncSession) -> Company:
     company = await db.get(Company, company_id.upper())
     if company is None:
         raise HTTPException(status_code=404, detail="Company not found")
+    return company
+
+
+@router.get("/{company_id}/connection", response_model=ConnectionRead)
+async def check_connection(company_id: str, db: AsyncSession = Depends(get_db)) -> ConnectionRead:
+    company = await _company(company_id, db)
 
     creds = get_settings().credentials_for(company.id)
     client = LiveBullhornClient(company_id=company.id, db=db)
@@ -39,3 +39,63 @@ async def check_connection(
         rest_url_present=bool(company.rest_url),
         detail=detail,
     )
+
+
+@router.get("/{company_id}/categories", response_model=list[TaxonomyOption])
+async def list_categories(
+    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
+) -> list[TaxonomyOption]:
+    company = await _company(company_id, db)
+
+    if not refresh:
+        cached = await db.scalars(select(Category).where(Category.company_id == company.id))
+        rows = cached.all()
+        if rows:
+            return [TaxonomyOption(id=row.bh_category_id, name=row.name) for row in rows]
+
+    client = LiveBullhornClient(company_id=company.id, db=db)
+    try:
+        categories = await client.list_categories()
+    except BullhornAuthError as exc:
+        log.warning("Company %s: category lookup failed", company.id)
+        raise HTTPException(status_code=502, detail="Bullhorn category lookup failed") from exc
+
+    await db.execute(delete(Category).where(Category.company_id == company.id))
+    db.add_all(
+        Category(company_id=company.id, bh_category_id=c["id"], name=c["name"]) for c in categories
+    )
+    await db.commit()
+    return [TaxonomyOption(id=c["id"], name=c["name"]) for c in categories]
+
+
+@router.get("/{company_id}/business-sectors")
+async def list_business_sectors(
+    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
+) -> list[TaxonomyOption]:
+    company = await _company(company_id, db)
+
+    if not refresh:
+        cached = await db.scalars(
+            select(BusinessSector).where(BusinessSector.company_id == company.id)
+        )
+        rows = cached.all()
+        if rows:
+            return [TaxonomyOption(id=row.bh_category_id, name=row.name) for row in rows]
+
+    client = LiveBullhornClient(company_id=company.id, db=db)
+    try:
+        sectors = await client.list_business_sectors()
+    except BullhornAuthError as exc:
+        print(exc)
+        log.warning("Company %s: business sector lookup failed", company.id)
+        raise HTTPException(
+            status_code=502, detail="Bullhorn business sector lookup failed"
+        ) from exc
+
+    await db.execute(delete(BusinessSector).where(BusinessSector.company_id == company.id))
+    db.add_all(
+        BusinessSector(company_id=company.id, bh_category_id=s["id"], name=s["name"])
+        for s in sectors
+    )
+    await db.commit()
+    return [TaxonomyOption(id=s["id"], name=s["name"]) for s in sectors]
