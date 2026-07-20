@@ -170,7 +170,7 @@ class LiveBullhornClient:
     async def list_business_sectors(self) -> list[dict[str, Any]]:
         payload = await self._get(
             "query/BusinessSector",
-            {"where": "id>0", "enabled": True, "fields": "id,name,email", "count": "500"},
+            {"where": "id>0", "enabled": True, "fields": "id,name", "count": "500"},
         )
         data: list[dict[str, Any]] = payload.get("data", [])
         return data
