@@ -1,18 +1,32 @@
 import logging
 
+from datetime import UTC, datetime
+
 from fastapi import APIRouter, Depends, HTTPException
+
 from sqlalchemy import delete, select
+
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
+
 from app.config import get_settings
+
 from app.database import get_db
+
 from app.models import BusinessSector, Category, Company, Skill
-from app.schemas import ConnectionRead, TaxonomyOption
+
+from app.schemas import ConnectionRead, BusinessSectorsOptions, TaxonomyOption
 
 log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/companies", tags=["companies"])
+
+
+def _parse_bh_timestamp(value: int | None) -> datetime | None:
+    if value is None:
+        return None
+    return datetime.fromtimestamp(value / 1000, tz=UTC)
 
 
 async def _company(company_id: str, db: AsyncSession) -> Company:
@@ -41,37 +55,10 @@ async def check_connection(company_id: str, db: AsyncSession = Depends(get_db)) 
     )
 
 
-@router.get("/{company_id}/categories", response_model=list[TaxonomyOption])
-async def list_categories(
-    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
-) -> list[TaxonomyOption]:
-    company = await _company(company_id, db)
-
-    if not refresh:
-        cached = await db.scalars(select(Category).where(Category.company_id == company.id))
-        rows = cached.all()
-        if rows:
-            return [TaxonomyOption(id=row.bh_category_id, name=row.name) for row in rows]
-
-    client = LiveBullhornClient(company_id=company.id, db=db)
-    try:
-        categories = await client.list_categories()
-    except BullhornAuthError as exc:
-        log.warning("Company %s: category lookup failed", company.id)
-        raise HTTPException(status_code=502, detail="Bullhorn category lookup failed") from exc
-
-    await db.execute(delete(Category).where(Category.company_id == company.id))
-    db.add_all(
-        Category(company_id=company.id, bh_category_id=c["id"], name=c["name"]) for c in categories
-    )
-    await db.commit()
-    return [TaxonomyOption(id=c["id"], name=c["name"]) for c in categories]
-
-
 @router.get("/{company_id}/business-sectors")
 async def list_business_sectors(
     company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
-) -> list[TaxonomyOption]:
+):
     company = await _company(company_id, db)
 
     if not refresh:
@@ -94,14 +81,51 @@ async def list_business_sectors(
 
     await db.execute(delete(BusinessSector).where(BusinessSector.company_id == company.id))
     db.add_all(
-        BusinessSector(company_id=company.id, bh_business_sector_id=s["id"], name=s["name"])
+        BusinessSector(
+            company_id=company.id,
+            bh_business_sector_id=s["id"],
+            name=s["name"],
+            date_added=_parse_bh_timestamp(s.get("dateAdded")),
+        )
         for s in sectors
     )
     await db.commit()
-    return [TaxonomyOption(id=s["id"], name=s["name"]) for s in sectors]
+    return [
+        BusinessSectorsOptions(id=s["id"], name=s["name"], date_added=s["dateAdded"])
+        for s in sectors
+    ]
 
 
-@router.get("/{company_id}/skills", response_model=list[TaxonomyOption])
+@router.get("/{company_id}/categories")
+async def list_categories(
+    company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
+):
+    company = await _company(company_id, db)
+
+    if not refresh:
+        cached = await db.scalars(select(Category).where(Category.company_id == company.id))
+        rows = cached.all()
+        if rows:
+            return [TaxonomyOption(id=row.bh_category_id, name=row.name) for row in rows]
+
+    client = LiveBullhornClient(company_id=company.id, db=db)
+    try:
+        categories = await client.list_categories()
+    except BullhornAuthError as exc:
+        log.warning("Company %s: category lookup failed", company.id)
+        raise HTTPException(status_code=502, detail="Bullhorn category lookup failed") from exc
+
+    await db.execute(delete(Category).where(Category.company_id == company.id))
+    db.add_all(
+        Category(company_id=company.id, bh_category_id=c["id"], name=c["name"]) for c in categories
+    )
+    await db.commit()
+
+    return categories
+    # return [TaxonomyOption(id=c["id"], name=c["name"]) for c in categories]
+
+
+@router.get("/{company_id}/skills")
 async def list_skills(
     company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
 ) -> list[TaxonomyOption]:

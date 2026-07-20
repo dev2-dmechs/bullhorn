@@ -162,7 +162,11 @@ class LiveBullhornClient:
     async def list_categories(self) -> list[dict[str, Any]]:
         payload = await self._get(
             "query/Category",
-            {"where": "enabled=true", "fields": "id,name", "count": "500"},
+            {
+                "where": "enabled=true",
+                "fields": "id,name,occupation,description,type,skills,specialties,enabled",
+                "count": "500",
+            },
         )
         data: list[dict[str, Any]] = payload.get("data", [])
         return data
@@ -170,7 +174,7 @@ class LiveBullhornClient:
     async def list_business_sectors(self) -> list[dict[str, Any]]:
         payload = await self._get(
             "query/BusinessSector",
-            {"where": "id>0", "enabled": True, "fields": "id,name", "count": "500"},
+            {"where": "id>0", "enabled": True, "fields": "id,name,dateAdded", "count": "500"},
         )
         data: list[dict[str, Any]] = payload.get("data", [])
         return data

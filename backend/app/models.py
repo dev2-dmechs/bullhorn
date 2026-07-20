@@ -35,6 +35,7 @@ class BusinessSector(Base):
     company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
     bh_business_sector_id: Mapped[int] = mapped_column(Integer)
     name: Mapped[str] = mapped_column(String(255))
+    date_added: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     __table_args__ = (UniqueConstraint("company_id", "bh_business_sector_id"),)
 

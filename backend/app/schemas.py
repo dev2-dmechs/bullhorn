@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, Field
 
 
@@ -13,6 +15,12 @@ class ConnectionRead(BaseModel):
 class TaxonomyOption(BaseModel):
     id: int
     name: str
+
+
+class BusinessSectorsOptions(BaseModel):
+    id: int
+    name: str
+    date_added: str | datetime
 
 
 class CandidateSearchRequest(BaseModel):
