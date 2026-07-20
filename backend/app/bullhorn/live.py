@@ -164,7 +164,7 @@ class LiveBullhornClient:
             "query/Category",
             {
                 "where": "enabled=true",
-                "fields": "id,name,occupation,description,type,skills,specialties,enabled",
+                "fields": "id,name,occupation,description,type,skills,specialties,enabled,dateAdded",  # noqa: E501
                 "count": "500",
             },
         )

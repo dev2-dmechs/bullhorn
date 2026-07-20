@@ -12,15 +12,27 @@ class ConnectionRead(BaseModel):
     detail: str | None = None
 
 
-class TaxonomyOption(BaseModel):
+class BaseOption(BaseModel):
     id: int
     name: str
 
 
-class BusinessSectorsOptions(BaseModel):
-    id: int
-    name: str
-    date_added: str | datetime
+class TaxonomyOption(BaseOption):
+    pass
+
+
+class CategorySchema(BaseOption):
+    description: str | None
+    enabled: bool
+    skills: list[int]
+    specialties: list[int]
+    type: str | None
+    date_added: datetime | None
+    occupation: str | None
+
+
+class BusinessSectorsSchema(BaseOption):
+    date_added: datetime | None
 
 
 class CandidateSearchRequest(BaseModel):

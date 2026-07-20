@@ -1,6 +1,7 @@
 from datetime import datetime
 
-from sqlalchemy import DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -17,17 +18,6 @@ class Company(Base):
     token_updated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
 
-class Category(Base):
-    __tablename__ = "categories"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
-    company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
-    bh_category_id: Mapped[int] = mapped_column(Integer)
-    name: Mapped[str] = mapped_column(String(255))
-
-    __table_args__ = (UniqueConstraint("company_id", "bh_category_id"),)
-
-
 class BusinessSector(Base):
     __tablename__ = "business_sectors"
 
@@ -38,6 +28,24 @@ class BusinessSector(Base):
     date_added: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
 
     __table_args__ = (UniqueConstraint("company_id", "bh_business_sector_id"),)
+
+
+class Category(Base):
+    __tablename__ = "categories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
+    bh_category_id: Mapped[int] = mapped_column(Integer)
+    name: Mapped[str] = mapped_column(String(255))
+    occupation: Mapped[str | None] = mapped_column(String(50), default=None)
+    description: Mapped[str | None] = mapped_column(String(255), default=None)
+    type: Mapped[str | None] = mapped_column(String(20), default=None)
+    enabled: Mapped[bool] = mapped_column(Boolean, default=True)
+    skills: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), default=None)
+    specialties: Mapped[list[int] | None] = mapped_column(ARRAY(Integer), default=None)
+    date_added: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), default=None)
+
+    __table_args__ = (UniqueConstraint("company_id", "bh_category_id"),)
 
 
 class Skill(Base):

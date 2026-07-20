@@ -1,22 +1,16 @@
 import logging
-
 from datetime import UTC, datetime
+from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException
-
 from sqlalchemy import delete, select
-
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
-
 from app.config import get_settings
-
 from app.database import get_db
-
 from app.models import BusinessSector, Category, Company, Skill
-
-from app.schemas import ConnectionRead, BusinessSectorsOptions, TaxonomyOption
+from app.schemas import BusinessSectorsSchema, CategorySchema, ConnectionRead, TaxonomyOption
 
 log = logging.getLogger(__name__)
 
@@ -91,7 +85,9 @@ async def list_business_sectors(
     )
     await db.commit()
     return [
-        BusinessSectorsOptions(id=s["id"], name=s["name"], date_added=s["dateAdded"])
+        BusinessSectorsSchema(
+            id=s["id"], name=s["name"], date_added=_parse_bh_timestamp(s.get("dateAdded"))
+        )
         for s in sectors
     ]
 
@@ -115,14 +111,42 @@ async def list_categories(
         log.warning("Company %s: category lookup failed", company.id)
         raise HTTPException(status_code=502, detail="Bullhorn category lookup failed") from exc
 
+    def _ids(association: dict[str, Any] | None) -> list[int]:
+        if not association:
+            return []
+        return [item["id"] for item in association.get("data", [])]
+
     await db.execute(delete(Category).where(Category.company_id == company.id))
     db.add_all(
-        Category(company_id=company.id, bh_category_id=c["id"], name=c["name"]) for c in categories
+        Category(
+            company_id=company.id,
+            bh_category_id=c["id"],
+            name=c["name"],
+            description=c.get("description"),
+            enabled=c.get("enabled", True),
+            skills=_ids(c.get("skills")),
+            specialties=_ids(c.get("specialties")),
+            type=c.get("type"),
+            date_added=_parse_bh_timestamp(c.get("dateAdded")),
+            occupation=c.get("occupation"),
+        )
+        for c in categories
     )
     await db.commit()
-
-    return categories
-    # return [TaxonomyOption(id=c["id"], name=c["name"]) for c in categories]
+    return [
+        CategorySchema(
+            id=c["id"],
+            name=c["name"],
+            description=c.get("description"),
+            enabled=c.get("enabled", True),
+            skills=_ids(c.get("skills")),
+            specialties=_ids(c.get("specialties")),
+            type=c.get("type"),
+            date_added=_parse_bh_timestamp(c.get("dateAdded")),
+            occupation=c.get("occupation"),
+        )
+        for c in categories
+    ]
 
 
 @router.get("/{company_id}/skills")
