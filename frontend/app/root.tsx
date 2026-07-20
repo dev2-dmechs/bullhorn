@@ -1,5 +1,8 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Links, Meta, Outlet, Scripts, ScrollRestoration } from "react-router";
 import "./app.css";
+
+const queryClient = new QueryClient();
 
 export default function App() {
   return (
@@ -11,7 +14,9 @@ export default function App() {
         <Links />
       </head>
       <body>
-        <Outlet />
+        <QueryClientProvider client={queryClient}>
+          <Outlet />
+        </QueryClientProvider>
         <ScrollRestoration />
         <Scripts />
       </body>

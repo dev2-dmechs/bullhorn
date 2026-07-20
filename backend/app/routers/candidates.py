@@ -42,7 +42,7 @@ def _redact(company_id: str, raw: dict[str, Any]) -> AnonymisedCandidate:
 @router.post("/{company_id}/candidates/search", response_model=CandidateSearchResponse)
 async def search_candidates(
     company_id: str, body: CandidateSearchRequest, db: AsyncSession = Depends(get_db)
-):
+) -> CandidateSearchResponse:
     company = await _company(company_id, db)
     client = LiveBullhornClient(company_id=company.id, db=db)
     try:
