@@ -37,6 +37,8 @@ RESUME_FORMAT_BY_EXTENSION = {
     "html": "html",
     "htm": "html",
 }
+JOB_ORDER_PAGE_SIZE = 500
+JOB_ORDER_ID_CHUNK = 200
 JOB_ORDER_FIELDS = (
     "id,title,status,employmentType,isOpen,isPublic,dateAdded,dateEnd,dateLastPublished,"
     "startDate,benefits,bonusPackage,payRate,salary,salaryUnit,publicDescription,"
@@ -403,3 +405,49 @@ class LiveBullhornClient:
         )
         data: list[dict[str, Any]] = payload.get("data", [])
         return data
+
+    async def list_all_job_order_ids(self) -> list[int]:
+        """Every JobOrder id in the tenant, id-only, fully paginated — not capped to a
+        'most recent N' window. Used by the vacancy poller so an unseen vacancy is never
+        missed just because more than N vacancies were added since the last poll."""
+        collected: list[int] = []
+        start = 0
+        while True:
+            payload = await self._get(
+                "query/JobOrder",
+                {
+                    "where": "id>0",
+                    "fields": "id",
+                    "orderBy": "-dateAdded",
+                    "count": str(JOB_ORDER_PAGE_SIZE),
+                    "start": str(start),
+                },
+            )
+            data: list[dict[str, Any]] = payload.get("data", [])
+            if not data:
+                break
+            collected.extend(item["id"] for item in data)
+            # /query (unlike /search) does not reliably return a usable "total" — a
+            # short page is the only trustworthy end-of-results signal here.
+            if len(data) < JOB_ORDER_PAGE_SIZE:
+                break
+            start += len(data)
+        return collected
+
+    async def list_job_orders_by_ids(self, ids: list[int]) -> list[dict[str, Any]]:
+        """Fetch full JobOrder detail fields for a specific set of ids only — the second
+        half of the id-scan-then-detail-fetch poll, so we never pull full fields for
+        vacancies already recorded in vacancies_seen."""
+        collected: list[dict[str, Any]] = []
+        for i in range(0, len(ids), JOB_ORDER_ID_CHUNK):
+            chunk = ids[i : i + JOB_ORDER_ID_CHUNK]
+            payload = await self._get(
+                "query/JobOrder",
+                {
+                    "where": f"id IN ({','.join(str(i) for i in chunk)})",
+                    "fields": JOB_ORDER_FIELDS,
+                    "count": str(len(chunk)),
+                },
+            )
+            collected.extend(payload.get("data", []))
+        return collected

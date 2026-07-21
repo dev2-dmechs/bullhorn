@@ -16,49 +16,42 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/vacancies", tags=["vacancies"])
 
-# The simulated auto-match always polls Company A — the one direction fixed by the
-# scoping doc (§1) — so these endpoints take no company_id, unlike the other routers.
 POLL_COMPANY_ID = "A"
-POLL_FETCH_COUNT = 200
 POLL_INTERVAL_SECONDS = 60
 MAX_FEED_SIZE = 500
 
-# In-memory only, per CLAUDE.md — a restart clears the feed but not `vacancies_seen`,
-# so nothing already reported can re-appear as "new".
 _feed: list[JobOrderSchema] = []
 _last_checked_at: datetime | None = None
 
 
 async def _check_and_record(db: AsyncSession) -> tuple[list[JobOrderSchema], int]:
-    """Fetch Company A's most recent JobOrders, diff against vacancies_seen, and record
-    whichever ones are new. Shared by the manual endpoint and the background poller."""
+    """Scan every JobOrder id in the tenant (not just the most recent N), diff the full
+    set against vacancies_seen, and record whichever ones are unseen."""
     client = LiveBullhornClient(company_id=POLL_COMPANY_ID, db=db)
-    jobs = await client.list_latest_jobs(count=POLL_FETCH_COUNT)
+    all_ids = await client.list_all_job_order_ids()
 
-    fetched_ids = [job["id"] for job in jobs]
     seen = await db.scalars(
-        select(VacancySeen.bh_job_order_id).where(
-            VacancySeen.company_id == POLL_COMPANY_ID,
-            VacancySeen.bh_job_order_id.in_(fetched_ids),
-        )
+        select(VacancySeen.bh_job_order_id).where(VacancySeen.company_id == POLL_COMPANY_ID)
     )
     seen_ids = set(seen.all())
-    new_jobs = [job for job in jobs if job["id"] not in seen_ids]
+    unseen_ids = [i for i in all_ids if i not in seen_ids]
+
+    jobs = await client.list_job_orders_by_ids(unseen_ids)
 
     now = datetime.now(UTC)
     db.add_all(
         VacancySeen(company_id=POLL_COMPANY_ID, bh_job_order_id=job["id"], first_seen_at=now)
-        for job in new_jobs
+        for job in jobs
     )
     await db.commit()
 
     log.info(
-        "Company %s: vacancy poll checked %d jobs, %d new",
+        "Company %s: vacancy poll scanned %d job orders, %d unseen",
         POLL_COMPANY_ID,
+        len(all_ids),
         len(jobs),
-        len(new_jobs),
     )
-    return [to_job_schema(job) for job in new_jobs], len(jobs)
+    return [to_job_schema(job) for job in jobs], len(all_ids)
 
 
 def _record_in_feed(new_jobs: list[JobOrderSchema]) -> None:
