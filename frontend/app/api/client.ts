@@ -21,6 +21,8 @@ export type TaxonomyOption = components["schemas"]["TaxonomyOption"];
 export type CandidateSearchRequest = components["schemas"]["CandidateSearchRequest"];
 export type CandidateSearchResponse = components["schemas"]["CandidateSearchResponse"];
 export type AnonymisedCandidate = components["schemas"]["AnonymisedCandidate"];
+export type CandidateResume = components["schemas"]["CandidateResume"];
+export type CandidateMatch = components["schemas"]["CandidateMatch"];
 
 export function getConnection(companyId: string) {
   return request<ConnectionRead>(`/companies/${companyId}/connection`);

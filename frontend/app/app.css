@@ -1,1 +1,44 @@
 @import "tailwindcss";
+
+@theme {
+  --color-brand-navy: #202945;
+  --color-brand-navy-light: #2f3a5f;
+  --color-brand-teal: #1b9ad6;
+  --color-brand-teal-dark: #157bab;
+  --color-brand-teal-light: #e6f4fb;
+  --color-brand-orange: #ff6b00;
+
+  /* shadcn/ui tokens — mapped onto the existing brand palette rather than a separate
+     theme, since this project has one brand, not a themeable design system yet.
+     primary = Bullhorn's brand orange, but darkened from --color-brand-orange —
+     white-on-#ff6b00 measures ~2.85:1 contrast (fails the ~4.5:1 needed for small
+     badge text). This shade keeps the same hue family at ~5.2:1. */
+  --color-primary: #c2410c;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: var(--color-brand-teal-light);
+  --color-secondary-foreground: var(--color-brand-navy);
+  --color-destructive: #dc2626;
+  --color-destructive-foreground: #ffffff;
+  --color-accent: var(--color-brand-teal-light);
+  --color-accent-foreground: var(--color-brand-navy);
+  --color-foreground: var(--color-brand-navy);
+  --color-border: #e2e8f0;
+  --color-ring: var(--color-brand-orange);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-brand-navy);
+}
+
+body {
+  background-color: #f7f9fb;
+}
+
+@keyframes panel-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

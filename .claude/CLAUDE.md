@@ -13,11 +13,17 @@ candidates from that tenant with their PII redacted.
 
 **Out of scope right now — do not build, do not "prepare for":**
 - The simulated auto-match / "check for new vacancies" trigger
-- AI matching and scoring (Anthropic, prompts, `score` / `reasons`)
+- AI matching and scoring (prompts, `score` / `reasons`, matching endpoints)
 
 The sections below still describe those in full, because they are the eventual target and
 the scoping document promises them. But they are the *next* phase, not this one. If a task
 seems to need them, it is out of scope — stop and ask.
+
+**One deliberate, narrow exception (2026-07-21):** `app/matching/client.py` exists —
+`get_openai_client()`, client construction only. No prompts, no scoring, no endpoint calls
+it. This is not "starting the matching phase early"; it's a single sanctioned building
+block, added on explicit request. Do not extend it into prompts/scoring without the same
+kind of explicit go-ahead.
 
 Already deleted to keep this honest: Alembic, the test suite, the mock Bullhorn client, and
 the entire matching pipeline. Do not reintroduce any of them unprompted.
@@ -83,7 +89,8 @@ wrong.
 - DB: PostgreSQL running locally (NOT Docker). Database: `bullhorn`
 - ORM: SQLAlchemy 2.0 async (asyncpg). **No Alembic** — see Schema below.
 - Frontend: React 19 + TypeScript + Vite, TanStack Query
-- AI matching: Claude via the Anthropic API
+- AI matching: OpenAI API (**changed 2026-07-21, was Anthropic/Claude** — client
+  construction only exists so far, see AI matching section below)
 - No auth on our own app. (Bullhorn OAuth is separate — see below.)
 
 ## Commands
@@ -186,8 +193,8 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
    Never log tokens or credentials.
 
 5. **PII DOES NOT LEAVE FOR THE AI VENDOR.** Rules 1, 2 and 4 cover Postgres, the browser
-   and logs. This rule covers the Anthropic API.
-   Only matching-relevant candidate fields may be sent to Anthropic:
+   and logs. This rule covers the OpenAI API.
+   Only matching-relevant candidate fields may be sent to OpenAI:
    **skills, job titles, years of experience, sector.**
    Never name, email, phone, address, or raw CV text.
    Strip PII **server-side, before the API call** — not by asking the prompt nicely.
@@ -221,8 +228,10 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
   Tokens and credentials are **never logged and never returned in an API response**.
 
 ## AI matching
-- Lives in `app/matching/`. The prompt lives in a versioned `.md` or `.txt` file — never
-  inlined as a Python string literal.
+- Lives in `app/matching/`. `client.py` (`get_openai_client()`) exists — everything else
+  below is still unbuilt, out of scope until asked for.
+- The prompt lives in a versioned `.md` or `.txt` file — never inlined as a Python string
+  literal.
 - **Input**: role requirements (the structured shape above) + the rule-5 candidate field
   allowlist (skills, job titles, years of experience, sector). Nothing else.
 - **Output is structured, never free prose:**
@@ -237,11 +246,11 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
   `reasons` must NEVER be free prose generated from CV text. Free prose re-identifies the
   candidate ("led the Derby structures team at a tier-1 aerospace supplier") and punches a
   hole straight through rule 1 and the client's whole reason for running this POC.
-- **Batching means: one Anthropic call per chunk of N candidates (start N=10).** It does
+- **Batching means: one OpenAI call per chunk of N candidates (start N=10).** It does
   NOT mean `asyncio.gather` over N single-candidate calls. Pick the chunked call.
 - **Scores live in the `match_results` row, keyed `(match_run_id, candidate_external_id)`.
   That row IS the cache. There is no separate cache table.** Re-rendering the results page
-  reads those rows back and must never re-bill the Anthropic API. Calling Claude is the
+  reads those rows back and must never re-bill the OpenAI API. Calling the model is the
   slowest and most expensive step in the app.
 
 ## Rules

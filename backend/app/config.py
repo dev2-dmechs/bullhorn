@@ -35,6 +35,9 @@ class Settings(BaseSettings):
     bh_b_username: str = ""
     bh_b_password: str = ""
 
+    openai_api_key: str = ""
+    openai_model: str = "gpt-5.6-sol"
+
     def credentials_for(self, company_id: str) -> TenantCredentials:
         prefix = f"bh_{company_id.lower()}_"
         return TenantCredentials(
