@@ -42,7 +42,9 @@ function ScoreBadge({ score }: { score: number | null }) {
   if (score === null) {
     return <span className="text-slate-300">—</span>;
   }
-  return <Badge className={`font-bold ${scoreColorClasses(score)}`}>{score}</Badge>;
+  return (
+    <Badge className={`font-bold ${scoreColorClasses(score)}`}>{score}</Badge>
+  );
 }
 
 function subScoresOf(match: CandidateMatch): [string, number][] {
@@ -176,9 +178,7 @@ export default function Search() {
     const newLoggedInAs = otherCompany(newTargetCompanyId);
     setStoredCompany(newLoggedInAs);
     setCompanyId(newLoggedInAs);
-    setToast(
-      `Logged in as ${COMPANY_LABELS[newLoggedInAs] ?? newLoggedInAs}`,
-    );
+    setToast(`Logged in as ${COMPANY_LABELS[newLoggedInAs] ?? newLoggedInAs}`);
   }
 
   if (!companyId) return null;
@@ -235,7 +235,7 @@ function TenantBadge({
       <Select value={targetCompanyId} onValueChange={onSwitch}>
         <SelectTrigger
           size="sm"
-          className="h-6 gap-1 rounded-md border-0 bg-transparent px-1.5 text-sm font-semibold text-white shadow-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-0 data-[placeholder]:text-white [&_svg]:text-white/70"
+          className="h-6 gap-1 rounded-md border-0 bg-transparent px-1.5 text-sm font-semibold text-white shadow-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-0 data-placeholder:text-white [&_svg]:text-white/70"
         >
           <SelectValue />
         </SelectTrigger>
