@@ -14,9 +14,10 @@ Separately (added to scope 2026-07-21), a manually-triggered "check for new vaca
 action polls Company A's Bullhorn for `JobOrder`s and reports which ones are new — it does
 **not** run matching against them.
 
-**In scope as of 2026-07-21:** the detection half of the simulated auto-match — manually
-triggered (a button, not a scheduler or webhook), `JobOrder` fetched by `dateAdded`, dedup
-via the new `vacancies_seen` table.
+**In scope as of 2026-07-21:** the detection half of the simulated auto-match — `JobOrder`
+fetched by `dateAdded`, dedup via the `vacancies_seen` table. Originally manual-trigger-only;
+**reversed later the same day** to an in-process backend poller (see below) at the user's
+explicit request, after being told this contradicts the "no schedulers" rule below.
 
 **Out of scope right now — do not build, do not "prepare for":**
 - Running AI matching/scoring against newly-detected vacancies
@@ -127,10 +128,19 @@ wrong.
   - **Simulated auto-match**: a "check for new vacancies" action polls **Company A's**
     Bullhorn, finds unseen vacancies, and runs the same matching against the other tenant.
     Only the trigger differs.
-    This is NOT real-time detection. Do not build webhooks or background schedulers.
     **As of 2026-07-21, only the detection half is in scope**: poll `JobOrder` by
     `dateAdded`, diff against `vacancies_seen`, report which ones are new. Do not wire up
     "runs the same matching" until the AI matching phase is separately greenlit.
+    **Reversed the same day (explicit request):** this is now backed by a real backend
+    poller — an in-process `asyncio` task started in FastAPI's `lifespan`, sleeping and
+    re-polling on a fixed interval, independent of anyone viewing the page. This is a
+    deliberate reversal of "do not build webhooks or background schedulers" — but stay
+    inside the spirit of the original rule: no webhooks (Bullhorn never pushes to us),
+    no external scheduling infra (no APScheduler, no cron, no separate process/container —
+    `CLAUDE.md`'s "no Docker/CI/infra tooling" rule still holds). One `asyncio.create_task`
+    loop, cancelled on shutdown. Found vacancies accumulate in an in-memory list on the
+    backend (not persisted beyond `vacancies_seen`'s IDs) and the frontend polls a GET
+    endpoint to render them — this is still fetch-based polling end to end, not push.
 
 ### Role requirements — one shape for both triggers
 This is the input to both flows, the payload stored on `match_runs`, and what the prompt

@@ -1,3 +1,4 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { AnonymisedCandidate, CandidateMatch } from "@/api/client";
 import {
@@ -7,6 +8,7 @@ import {
   useCheckNewVacancies,
   useConnection,
   useCountries,
+  useNewVacanciesFeed,
   useSkills,
 } from "@/api/hooks";
 import { Badge } from "@/components/ui/badge";
@@ -196,6 +198,7 @@ export default function Search() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <NewVacanciesFeed />
             <CheckNewVacanciesButton onResult={setToast} />
             <TenantBadge
               targetCompanyId={targetCompanyId}
@@ -222,16 +225,63 @@ function Toast({ message }: { message: string }) {
   );
 }
 
+function NewVacanciesFeed() {
+  const [open, setOpen] = useState(false);
+  const { data } = useNewVacanciesFeed();
+  const jobs = data?.jobs ?? [];
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+      >
+        New vacancies
+        {jobs.length > 0 && (
+          <Badge className="border-transparent bg-brand-teal text-white">
+            {jobs.length}
+          </Badge>
+        )}
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full z-30 mt-2 max-h-96 w-80 overflow-y-auto rounded-lg bg-white p-2 shadow-xl">
+          {jobs.length === 0 ? (
+            <p className="px-3 py-4 text-sm text-slate-400">
+              No new vacancies detected yet
+            </p>
+          ) : (
+            <ul className="divide-y divide-slate-100">
+              {jobs.map((job) => (
+                <li key={job.id} className="px-3 py-2">
+                  <p className="text-sm font-medium text-slate-800">{job.title}</p>
+                  <p className="text-xs text-slate-400">
+                    {job.date_added
+                      ? new Date(job.date_added).toLocaleString()
+                      : "date unknown"}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function CheckNewVacanciesButton({
   onResult,
 }: {
   onResult: (message: string) => void;
 }) {
   const { mutate, isPending } = useCheckNewVacancies();
+  const queryClient = useQueryClient();
 
   function handleClick() {
     mutate(undefined, {
       onSuccess: (result) => {
+        void queryClient.invalidateQueries({ queryKey: ["new-vacancies"] });
         const count = result.new_jobs.length;
         onResult(
           count === 0

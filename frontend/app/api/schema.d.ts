@@ -134,11 +134,31 @@ export interface paths {
         put?: never;
         /**
          * Check New Vacancies
-         * @description Manually triggered detection-only poll: fetch Company A's most recent JobOrders,
-         *     diff against vacancies_seen, and report/record whichever ones are new. Does not run
-         *     matching against them — that lands with the AI matching phase.
+         * @description On-demand poll — same detection logic the background poller runs on its own
+         *     interval. Also feeds the accumulating feed served by GET /vacancies/new.
          */
         post: operations["check_new_vacancies_vacancies_check_new_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/vacancies/new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get New Vacancies
+         * @description The accumulating feed the frontend polls to render a running list — populated by
+         *     the background poller and by manual /check-new calls.
+         */
+        get: operations["get_new_vacancies_vacancies_new_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -371,8 +391,8 @@ export interface components {
         };
         /**
          * NewVacancyCheckResponse
-         * @description Result of a manual "check for new vacancies" poll against Company A. Detection
-         *     only — these jobs are not matched/scored against candidates yet.
+         * @description Result of one on-demand "check for new vacancies" poll against Company A.
+         *     Detection only — these jobs are not matched/scored against candidates yet.
          */
         NewVacancyCheckResponse: {
             /** Company Id */
@@ -388,6 +408,19 @@ export interface components {
             id: number;
             /** Name */
             name: string;
+        };
+        /**
+         * VacancyFeedResponse
+         * @description The accumulating feed of newly-detected Company A vacancies, populated by the
+         *     background poller. In-memory only — see app/routers/vacancies.py.
+         */
+        VacancyFeedResponse: {
+            /** Company Id */
+            company_id: string;
+            /** Jobs */
+            jobs: components["schemas"]["JobOrderSchema"][];
+            /** Last Checked At */
+            last_checked_at: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -654,6 +687,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["NewVacancyCheckResponse"];
+                };
+            };
+        };
+    };
+    get_new_vacancies_vacancies_new_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["VacancyFeedResponse"];
                 };
             };
         };

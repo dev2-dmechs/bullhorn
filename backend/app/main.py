@@ -1,6 +1,7 @@
+import asyncio
 import logging
 from collections.abc import AsyncIterator
-from contextlib import asynccontextmanager
+from contextlib import asynccontextmanager, suppress
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -14,7 +15,13 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await init_db()
-    yield
+    poll_task = asyncio.create_task(vacancies.poll_loop())
+    try:
+        yield
+    finally:
+        poll_task.cancel()
+        with suppress(asyncio.CancelledError):
+            await poll_task
 
 
 app = FastAPI(title="Bullhorn Cross-Company Search & Match", lifespan=lifespan)

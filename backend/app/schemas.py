@@ -174,9 +174,18 @@ class MatchScoreBatchResult(BaseModel):
 
 
 class NewVacancyCheckResponse(BaseModel):
-    """Result of a manual "check for new vacancies" poll against Company A. Detection
-    only — these jobs are not matched/scored against candidates yet."""
+    """Result of one on-demand "check for new vacancies" poll against Company A.
+    Detection only — these jobs are not matched/scored against candidates yet."""
 
     company_id: str
     new_jobs: list[JobOrderSchema]
     checked_count: int
+
+
+class VacancyFeedResponse(BaseModel):
+    """The accumulating feed of newly-detected Company A vacancies, populated by the
+    background poller. In-memory only — see app/routers/vacancies.py."""
+
+    company_id: str
+    jobs: list[JobOrderSchema]
+    last_checked_at: datetime | None

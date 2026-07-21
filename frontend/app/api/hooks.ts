@@ -6,9 +6,15 @@ import {
   getCategories,
   getConnection,
   getCountries,
+  getNewVacancies,
   getSkills,
   searchCandidates,
 } from "./client";
+
+// The backend re-polls Bullhorn every 60s (see POLL_INTERVAL_SECONDS in
+// app/routers/vacancies.py) — poll a bit more often so the UI picks up a fresh feed
+// shortly after the backend does, without hammering our own API.
+const VACANCY_FEED_REFETCH_MS = 15_000;
 
 export function useConnection(companyId: string) {
   return useQuery({
@@ -54,5 +60,13 @@ export function useCandidateSearch(companyId: string) {
 export function useCheckNewVacancies() {
   return useMutation({
     mutationFn: checkNewVacancies,
+  });
+}
+
+export function useNewVacanciesFeed() {
+  return useQuery({
+    queryKey: ["new-vacancies"],
+    queryFn: getNewVacancies,
+    refetchInterval: VACANCY_FEED_REFETCH_MS,
   });
 }
