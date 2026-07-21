@@ -4,7 +4,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bullhorn.live import MAX_CANDIDATES, BullhornAuthError, LiveBullhornClient
+from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
 from app.database import get_db
 from app.models import Company
 from app.schemas import AnonymisedCandidate, CandidateSearchRequest, CandidateSearchResponse
@@ -61,5 +61,5 @@ async def search_candidates(
         company_id=company.id,
         candidates=candidates,
         total_count=total,
-        capped=total > MAX_CANDIDATES,
+        capped=total > len(candidates),
     )

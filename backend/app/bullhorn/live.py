@@ -14,7 +14,7 @@ log = logging.getLogger(__name__)
 TIMEOUT = httpx.Timeout(30.0)
 MAX_AUTH_REDIRECTS = 5
 PING_PATH = "ping"
-MAX_CANDIDATES = 500
+MAX_CANDIDATES = 50
 CANDIDATE_SEARCH_FIELDS = "id,categories,businessSectors,owner,status"
 JOB_ORDER_FIELDS = (
     "id,title,status,employmentType,isOpen,isPublic,dateAdded,dateEnd,dateLastPublished,"
@@ -197,12 +197,14 @@ class LiveBullhornClient:
 
     async def search_candidates(
         self,
-        category_ids: list[int],
+        category_ids: list[int] | None = None,
         skill_ids: list[int] | None = None,
         business_sector_ids: list[int] | None = None,
         country_ids: list[int] | None = None,
     ) -> tuple[list[dict[str, Any]], int]:
-        clauses = [f"categories.id:({' OR '.join(str(i) for i in category_ids)})"]
+        clauses = []
+        if category_ids:
+            clauses.append(f"categories.id:({' OR '.join(str(i) for i in category_ids)})")
         if skill_ids:
             clauses.append(f"primarySkills.id:({' OR '.join(str(i) for i in skill_ids)})")
         if business_sector_ids:
@@ -211,20 +213,33 @@ class LiveBullhornClient:
             )
         if country_ids:
             clauses.append(f"address.country.id:({' OR '.join(str(i) for i in country_ids)})")
+        if not clauses:
+            raise ValueError("search_candidates requires at least one filter")
         query = " AND ".join(clauses)
 
-        payload = await self._get(
-            "search/Candidate",
-            {
-                "query": query,
-                "fields": CANDIDATE_SEARCH_FIELDS,
-                "count": str(MAX_CANDIDATES),
-                "start": "0",
-            },
-        )
-        data: list[dict[str, Any]] = payload.get("data", [])
-        total: int = payload.get("total", len(data))
-        return data, total
+        collected: list[dict[str, Any]] = []
+        total = 0
+        start = 0
+        while len(collected) < MAX_CANDIDATES:
+            payload = await self._get(
+                "search/Candidate",
+                {
+                    "query": query,
+                    "fields": CANDIDATE_SEARCH_FIELDS,
+                    "count": str(MAX_CANDIDATES - len(collected)),
+                    "start": str(start),
+                },
+            )
+            data: list[dict[str, Any]] = payload.get("data", [])
+            total = payload.get("total", len(data))
+            if not data:
+                break
+            collected.extend(data)
+            start += len(data)
+            if start >= total:
+                break
+
+        return collected, total
 
     async def list_countries(self) -> list[dict[str, Any]]:
         payload = await self._get("options/Country", {"count": "500", "start": "0"})

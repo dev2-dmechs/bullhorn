@@ -17,23 +17,30 @@ export default function Login() {
   }
 
   return (
-    <div className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-6">
-      <header className="mb-8 text-center">
-        <h1 className="text-2xl font-semibold text-slate-900">
-          Bullhorn Cross-Company Search
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">Choose the tenant to search as.</p>
-      </header>
+    <div className="flex min-h-screen items-center justify-center bg-brand-navy px-6">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow-xl">
+        <header className="mb-8 text-center">
+          <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-lg bg-brand-teal text-lg font-bold text-white">
+            B
+          </div>
+          <h1 className="text-2xl font-semibold text-brand-navy">
+            Bullhorn Cross-Company Search
+          </h1>
+          <p className="mt-1 text-sm text-slate-500">
+            Choose your company. You'll search the other tenant's candidates.
+          </p>
+        </header>
 
-      <div className="space-y-3">
-        {COMPANIES.map((company) => (
-          <CompanyOption
-            key={company.id}
-            companyId={company.id}
-            label={company.label}
-            onSelect={() => selectCompany(company.id)}
-          />
-        ))}
+        <div className="space-y-3">
+          {COMPANIES.map((company) => (
+            <CompanyOption
+              key={company.id}
+              companyId={company.id}
+              label={company.label}
+              onSelect={() => selectCompany(company.id)}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -54,7 +61,7 @@ function CompanyOption({
     <button
       type="button"
       onClick={onSelect}
-      className="flex w-full items-center justify-between rounded-lg border border-slate-300 bg-white px-4 py-3 text-sm font-medium text-slate-700 transition hover:border-slate-400"
+      className="flex w-full items-center justify-between rounded-lg border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-brand-navy transition hover:border-brand-teal hover:bg-brand-teal-light"
     >
       {label}
       <StatusDot loading={isLoading} connected={connection?.connected} />

@@ -184,7 +184,7 @@ export interface components {
         /** CandidateSearchRequest */
         CandidateSearchRequest: {
             /** Category Ids */
-            category_ids: number[];
+            category_ids?: number[];
             /** Skill Ids */
             skill_ids?: number[];
             /** Business Sector Ids */

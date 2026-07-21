@@ -12,7 +12,14 @@ import {
 import { StatusDot } from "@/components/StatusDot";
 import { clearStoredCompany, getStoredCompany } from "@/lib/storage";
 
-const COMPANY_LABELS: Record<string, string> = { A: "Company A", B: "Company B" };
+const COMPANY_LABELS: Record<string, string> = {
+  A: "Company A",
+  B: "Company B",
+};
+
+function otherCompany(companyId: string): string {
+  return companyId === "A" ? "B" : "A";
+}
 
 export default function Search() {
   const navigate = useNavigate();
@@ -34,48 +41,67 @@ export default function Search() {
 
   if (!companyId) return null;
 
+  const targetCompanyId = otherCompany(companyId);
+
   return (
-    <div className="mx-auto max-w-5xl px-6 py-10">
-      <header className="mb-8 flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">
-            Bullhorn Cross-Company Search
-          </h1>
-          <p className="mt-1 text-sm text-slate-500">
-            Search candidates in one tenant. Names and contact details stay hidden.
-          </p>
+    <div className="min-h-screen">
+      <header className="bg-brand-navy px-6 py-3">
+        <div className="mx-auto flex max-w-5xl items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand-teal text-sm font-bold text-white">
+              B
+            </div>
+            <h1 className="text-base font-semibold text-white">
+              Bullhorn Cross-Company Search
+            </h1>
+          </div>
+          <button
+            type="button"
+            onClick={logout}
+            className="rounded-lg border border-white/20 px-3 py-1 text-sm text-white transition hover:border-white/40 hover:bg-white/10"
+          >
+            Log out
+          </button>
         </div>
-        <button
-          type="button"
-          onClick={logout}
-          className="rounded-lg border border-slate-300 px-3 py-1.5 text-sm text-slate-600 hover:border-slate-400"
-        >
-          Log out
-        </button>
       </header>
 
-      <CurrentTenant companyId={companyId} />
-      <SearchPanel companyId={companyId} />
+      <div className="mx-auto max-w-5xl px-6 py-8">
+        <CurrentTenant
+          companyId={companyId}
+          targetCompanyId={targetCompanyId}
+        />
+        <SearchPanel companyId={targetCompanyId} />
+      </div>
     </div>
   );
 }
 
-function CurrentTenant({ companyId }: { companyId: string }) {
-  const { data: connection, isLoading } = useConnection(companyId);
+function CurrentTenant({
+  companyId,
+  targetCompanyId,
+}: {
+  companyId: string;
+  targetCompanyId: string;
+}) {
+  const { data: connection, isLoading } = useConnection(targetCompanyId);
 
   return (
-    <div className="mb-6 inline-flex items-center gap-2 rounded-lg border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700">
-      {COMPANY_LABELS[companyId] ?? companyId}
+    <div className="mb-6 inline-flex items-center gap-2 rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-brand-navy shadow-sm">
+      Logged in as {COMPANY_LABELS[companyId] ?? companyId} — searching{" "}
+      {COMPANY_LABELS[targetCompanyId] ?? targetCompanyId}
       <StatusDot loading={isLoading} connected={connection?.connected} />
     </div>
   );
 }
 
 function SearchPanel({ companyId }: { companyId: string }) {
-  const { data: categories, isLoading: categoriesLoading } = useCategories(companyId);
-  const { data: businessSectors, isLoading: sectorsLoading } = useBusinessSectors(companyId);
+  const { data: categories, isLoading: categoriesLoading } =
+    useCategories(companyId);
+  const { data: businessSectors, isLoading: sectorsLoading } =
+    useBusinessSectors(companyId);
   const { data: skills, isLoading: skillsLoading } = useSkills(companyId);
-  const { data: countries, isLoading: countriesLoading } = useCountries(companyId);
+  const { data: countries, isLoading: countriesLoading } =
+    useCountries(companyId);
 
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [businessSectorIds, setBusinessSectorIds] = useState<number[]>([]);
@@ -84,7 +110,12 @@ function SearchPanel({ companyId }: { companyId: string }) {
 
   const search = useCandidateSearch(companyId);
 
-  const canSearch = categoryIds.length > 0 && !search.isPending;
+  const hasAnyFilter =
+    categoryIds.length > 0 ||
+    businessSectorIds.length > 0 ||
+    skillIds.length > 0 ||
+    countryIds.length > 0;
+  const canSearch = hasAnyFilter && !search.isPending;
 
   const categoryOptions = useMemo(
     () => (categories ?? []).map((c) => ({ id: c.id, name: c.name })),
@@ -94,7 +125,10 @@ function SearchPanel({ companyId }: { companyId: string }) {
     () => (businessSectors ?? []).map((s) => ({ id: s.id, name: s.name })),
     [businessSectors],
   );
-  const skillOptions = useMemo(() => (skills ?? []).map((s) => ({ id: s.id, name: s.name })), [skills]);
+  const skillOptions = useMemo(
+    () => (skills ?? []).map((s) => ({ id: s.id, name: s.name })),
+    [skills],
+  );
   const countryOptions = useMemo(
     () => (countries ?? []).map((c) => ({ id: c.id, name: c.name })),
     [countries],
@@ -115,7 +149,6 @@ function SearchPanel({ companyId }: { companyId: string }) {
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MultiSelect
           label="Category"
-          required
           loading={categoriesLoading}
           options={categoryOptions}
           selected={categoryIds}
@@ -148,16 +181,20 @@ function SearchPanel({ companyId }: { companyId: string }) {
         type="button"
         onClick={handleSearch}
         disabled={!canSearch}
-        className="rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-40"
+        className="rounded-lg bg-brand-teal px-5 py-2.5 text-sm font-medium text-white transition hover:bg-brand-teal-dark disabled:cursor-not-allowed disabled:bg-slate-300"
       >
         {search.isPending ? "Searching…" : "Search candidates"}
       </button>
-      {categoryIds.length === 0 && (
-        <p className="text-xs text-slate-400">Pick at least one category to search.</p>
+      {!hasAnyFilter && (
+        <p className="text-xs text-slate-400">
+          Pick at least one filter (category, business sector, skill, or country) to search.
+        </p>
       )}
 
       {search.isError && (
-        <p className="text-sm text-red-600">{(search.error as Error).message}</p>
+        <p className="text-sm text-red-600">
+          {(search.error as Error).message}
+        </p>
       )}
 
       {search.data && <Results data={search.data} />}
@@ -166,17 +203,22 @@ function SearchPanel({ companyId }: { companyId: string }) {
 }
 
 const MAX_SUGGESTIONS = 25;
+const MAX_CHIP_LABEL_LENGTH = 35;
+
+function truncateLabel(name: string): string {
+  return name.length > MAX_CHIP_LABEL_LENGTH
+    ? `${name.slice(0, MAX_CHIP_LABEL_LENGTH - 1)}…`
+    : name;
+}
 
 function MultiSelect({
   label,
-  required,
   loading,
   options,
   selected,
   onChange,
 }: {
   label: string;
-  required?: boolean;
   loading: boolean;
   options: { id: number; name: string }[];
   selected: number[];
@@ -191,7 +233,9 @@ function MultiSelect({
     if (query.trim().length === 0) return [];
     const q = query.trim().toLowerCase();
     return options
-      .filter((o) => !selected.includes(o.id) && o.name.toLowerCase().includes(q))
+      .filter(
+        (o) => !selected.includes(o.id) && o.name.toLowerCase().includes(q),
+      )
       .slice(0, MAX_SUGGESTIONS);
   }, [options, query, selected]);
 
@@ -208,10 +252,7 @@ function MultiSelect({
 
   return (
     <div>
-      <label className="mb-1 block text-sm font-medium text-slate-700">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </label>
+      <label className="mb-1 block text-sm font-medium text-brand-navy">{label}</label>
 
       <div className="relative">
         <input
@@ -222,7 +263,7 @@ function MultiSelect({
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}
           placeholder={loading ? "Loading…" : `Search ${label.toLowerCase()}…`}
-          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm disabled:opacity-50"
+          className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm outline-none transition focus:border-brand-teal focus:ring-2 focus:ring-brand-teal/20 disabled:opacity-50"
         />
 
         {showDropdown && (
@@ -236,7 +277,7 @@ function MultiSelect({
                   type="button"
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => addOption(o.id)}
-                  className="block w-full px-3 py-2 text-left text-sm hover:bg-slate-50"
+                  className="block w-full px-3 py-2 text-left text-sm hover:bg-brand-teal-light"
                 >
                   {o.name}
                 </button>
@@ -251,13 +292,14 @@ function MultiSelect({
           {selectedOptions.map((o) => (
             <span
               key={o.id}
-              className="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2.5 py-1 text-xs text-slate-700"
+              title={o.name}
+              className="inline-flex items-center gap-1 rounded-full bg-brand-teal-light px-2.5 py-1 text-xs text-brand-navy"
             >
-              {o.name}
+              {truncateLabel(o.name)}
               <button
                 type="button"
                 onClick={() => removeOption(o.id)}
-                className="text-slate-400 hover:text-slate-700"
+                className="shrink-0 text-brand-navy/50 hover:text-brand-navy"
                 aria-label={`Remove ${o.name}`}
               >
                 ×
@@ -273,7 +315,11 @@ function MultiSelect({
 function Results({
   data,
 }: {
-  data: { candidates: AnonymisedCandidate[]; total_count: number; capped: boolean };
+  data: {
+    candidates: AnonymisedCandidate[];
+    total_count: number;
+    capped: boolean;
+  };
 }) {
   if (data.candidates.length === 0) {
     return <p className="text-sm text-slate-500">No candidates matched.</p>;
@@ -285,9 +331,9 @@ function Results({
         {data.total_count} match{data.total_count === 1 ? "" : "es"} in Bullhorn
         {data.capped && ` — showing first ${data.candidates.length}`}
       </p>
-      <div className="overflow-hidden rounded-lg border border-slate-200">
+      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <table className="w-full text-left text-sm">
-          <thead className="bg-slate-50 text-slate-500">
+          <thead className="bg-brand-navy text-slate-200">
             <tr>
               <th className="px-4 py-2 font-medium">Candidate ID</th>
               <th className="px-4 py-2 font-medium">Category</th>
@@ -297,7 +343,7 @@ function Results({
           </thead>
           <tbody className="divide-y divide-slate-100">
             {data.candidates.map((c) => (
-              <tr key={c.external_id}>
+              <tr key={c.external_id} className="hover:bg-brand-teal-light/60">
                 <td className="px-4 py-2 text-slate-400">#{c.external_id}</td>
                 <td className="px-4 py-2">{c.category ?? "—"}</td>
                 <td className="px-4 py-2">{c.business_sector ?? "—"}</td>

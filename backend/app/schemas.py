@@ -1,6 +1,6 @@
 from datetime import datetime
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 
 class ConnectionRead(BaseModel):
@@ -36,10 +36,21 @@ class BusinessSectorsSchema(BaseOption):
 
 
 class CandidateSearchRequest(BaseModel):
-    category_ids: list[int] = Field(min_length=1)
+    category_ids: list[int] = Field(default_factory=list)
     skill_ids: list[int] = Field(default_factory=list)
     business_sector_ids: list[int] = Field(default_factory=list)
     country_ids: list[int] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _at_least_one_filter(self) -> "CandidateSearchRequest":
+        has_filter = (
+            self.category_ids or self.skill_ids or self.business_sector_ids or self.country_ids
+        )
+        if not has_filter:
+            raise ValueError(
+                "At least one of category, skill, business sector or country is required"
+            )
+        return self
 
 
 class AnonymisedCandidate(BaseModel):
