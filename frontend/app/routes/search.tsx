@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate } from "react-router";
 import type { AnonymisedCandidate, CandidateMatch } from "@/api/client";
 import {
   useBusinessSectors,
@@ -10,8 +9,15 @@ import {
   useSkills,
 } from "@/api/hooks";
 import { Badge } from "@/components/ui/badge";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { StatusDot } from "@/components/StatusDot";
-import { clearStoredCompany, getStoredCompany } from "@/lib/storage";
+import { getStoredCompany, setStoredCompany } from "@/lib/storage";
 
 const COMPANY_LABELS: Record<string, string> = {
   A: "Company A",
@@ -150,22 +156,29 @@ function CloseIcon({ className = "h-4 w-4" }: { className?: string }) {
   );
 }
 
+const DEFAULT_COMPANY = "A";
+
 export default function Search() {
-  const navigate = useNavigate();
   const [companyId, setCompanyId] = useState<string | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
 
   useEffect(() => {
-    const stored = getStoredCompany();
-    if (!stored) {
-      navigate("/", { replace: true });
-      return;
-    }
-    setCompanyId(stored);
-  }, [navigate]);
+    setCompanyId(getStoredCompany() ?? DEFAULT_COMPANY);
+  }, []);
 
-  function logout() {
-    clearStoredCompany();
-    navigate("/", { replace: true });
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
+
+  function switchTargetCompany(newTargetCompanyId: string) {
+    const newLoggedInAs = otherCompany(newTargetCompanyId);
+    setStoredCompany(newLoggedInAs);
+    setCompanyId(newLoggedInAs);
+    setToast(
+      `Logged in as ${COMPANY_LABELS[newLoggedInAs] ?? newLoggedInAs}`,
+    );
   }
 
   if (!companyId) return null;
@@ -182,14 +195,10 @@ export default function Search() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <TenantBadge targetCompanyId={targetCompanyId} />
-            <button
-              type="button"
-              onClick={logout}
-              className="rounded-lg border border-white/20 px-3 py-1 text-sm text-white transition hover:border-white/40 hover:bg-white/10"
-            >
-              Log out
-            </button>
+            <TenantBadge
+              targetCompanyId={targetCompanyId}
+              onSwitch={switchTargetCompany}
+            />
           </div>
         </div>
       </header>
@@ -197,16 +206,48 @@ export default function Search() {
       <div className="mx-auto max-w-7xl px-6 py-8">
         <SearchPanel companyId={targetCompanyId} />
       </div>
+
+      {toast && <Toast message={toast} />}
     </div>
   );
 }
 
-function TenantBadge({ targetCompanyId }: { targetCompanyId: string }) {
+function Toast({ message }: { message: string }) {
+  return (
+    <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-[panel-in_0.15s_ease-out] rounded-full bg-brand-navy px-5 py-2.5 text-sm font-medium text-white shadow-xl shadow-brand-navy/30">
+      {message}
+    </div>
+  );
+}
+
+function TenantBadge({
+  targetCompanyId,
+  onSwitch,
+}: {
+  targetCompanyId: string;
+  onSwitch: (targetCompanyId: string) => void;
+}) {
   const { data: connection, isLoading } = useConnection(targetCompanyId);
 
   return (
-    <div className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-3 py-1 text-sm text-white">
-      Searching {COMPANY_LABELS[targetCompanyId] ?? targetCompanyId}
+    <div className="inline-flex items-center gap-2.5 rounded-full bg-white/10 py-1 pl-3.5 pr-2.5 text-sm">
+      <span className="text-white/60">Searching</span>
+      <Select value={targetCompanyId} onValueChange={onSwitch}>
+        <SelectTrigger
+          size="sm"
+          className="h-6 gap-1 rounded-md border-0 bg-transparent px-1.5 text-sm font-semibold text-white shadow-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-0 data-[placeholder]:text-white [&_svg]:text-white/70"
+        >
+          <SelectValue />
+        </SelectTrigger>
+        <SelectContent align="end">
+          {Object.entries(COMPANY_LABELS).map(([id, label]) => (
+            <SelectItem key={id} value={id}>
+              {label}
+            </SelectItem>
+          ))}
+        </SelectContent>
+      </Select>
+      <span className="h-4 w-px bg-white/15" />
       <StatusDot loading={isLoading} connected={connection?.connected} />
     </div>
   );

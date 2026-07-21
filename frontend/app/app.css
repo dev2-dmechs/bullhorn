@@ -24,6 +24,8 @@
   --color-foreground: var(--color-brand-navy);
   --color-border: #e2e8f0;
   --color-ring: var(--color-brand-orange);
+  --color-popover: #ffffff;
+  --color-popover-foreground: var(--color-brand-navy);
 }
 
 body {
