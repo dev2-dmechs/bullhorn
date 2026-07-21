@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   type CandidateSearchRequest,
+  checkNewVacancies,
   getBusinessSectors,
   getCategories,
   getConnection,
@@ -47,5 +48,11 @@ export function useCountries(companyId: string) {
 export function useCandidateSearch(companyId: string) {
   return useMutation({
     mutationFn: (body: CandidateSearchRequest) => searchCandidates(companyId, body),
+  });
+}
+
+export function useCheckNewVacancies() {
+  return useMutation({
+    mutationFn: checkNewVacancies,
   });
 }

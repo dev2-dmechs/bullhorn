@@ -123,6 +123,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/vacancies/check-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Check New Vacancies
+         * @description Manually triggered detection-only poll: fetch Company A's most recent JobOrders,
+         *     diff against vacancies_seen, and report/record whichever ones are new. Does not run
+         *     matching against them — that lands with the AI matching phase.
+         */
+        post: operations["check_new_vacancies_vacancies_check_new_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -346,6 +368,19 @@ export interface components {
             published_category: string | null;
             /** Response User Name */
             response_user_name: string | null;
+        };
+        /**
+         * NewVacancyCheckResponse
+         * @description Result of a manual "check for new vacancies" poll against Company A. Detection
+         *     only — these jobs are not matched/scored against candidates yet.
+         */
+        NewVacancyCheckResponse: {
+            /** Company Id */
+            company_id: string;
+            /** New Jobs */
+            new_jobs: components["schemas"]["JobOrderSchema"][];
+            /** Checked Count */
+            checked_count: number;
         };
         /** TaxonomyOption */
         TaxonomyOption: {
@@ -599,6 +634,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_new_vacancies_vacancies_check_new_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewVacancyCheckResponse"];
                 };
             };
         };

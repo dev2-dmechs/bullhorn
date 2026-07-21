@@ -171,3 +171,12 @@ class MatchScoreBatchResult(BaseModel):
     to MATCH_CHUNK_SIZE candidates against the same role at once."""
 
     results: list[MatchScore]
+
+
+class NewVacancyCheckResponse(BaseModel):
+    """Result of a manual "check for new vacancies" poll against Company A. Detection
+    only — these jobs are not matched/scored against candidates yet."""
+
+    company_id: str
+    new_jobs: list[JobOrderSchema]
+    checked_count: int

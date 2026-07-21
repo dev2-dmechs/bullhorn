@@ -4,6 +4,7 @@ import {
   useBusinessSectors,
   useCandidateSearch,
   useCategories,
+  useCheckNewVacancies,
   useConnection,
   useCountries,
   useSkills,
@@ -195,6 +196,7 @@ export default function Search() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
+            <CheckNewVacanciesButton onResult={setToast} />
             <TenantBadge
               targetCompanyId={targetCompanyId}
               onSwitch={switchTargetCompany}
@@ -217,6 +219,40 @@ function Toast({ message }: { message: string }) {
     <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-[panel-in_0.15s_ease-out] rounded-full bg-brand-navy px-5 py-2.5 text-sm font-medium text-white shadow-xl shadow-brand-navy/30">
       {message}
     </div>
+  );
+}
+
+function CheckNewVacanciesButton({
+  onResult,
+}: {
+  onResult: (message: string) => void;
+}) {
+  const { mutate, isPending } = useCheckNewVacancies();
+
+  function handleClick() {
+    mutate(undefined, {
+      onSuccess: (result) => {
+        const count = result.new_jobs.length;
+        onResult(
+          count === 0
+            ? "No new vacancies since last check"
+            : `${count} new vacanc${count === 1 ? "y" : "ies"} found (Company A)`,
+        );
+      },
+      onError: () => onResult("Vacancy check failed"),
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isPending}
+      className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-60"
+    >
+      {isPending && <Spinner className="h-3.5 w-3.5" />}
+      Check for new vacancies
+    </button>
   );
 }
 

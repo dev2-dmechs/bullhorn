@@ -57,3 +57,14 @@ class Skill(Base):
     name: Mapped[str] = mapped_column(String(255))
 
     __table_args__ = (UniqueConstraint("company_id", "bh_skill_id"),)
+
+
+class VacancySeen(Base):
+    __tablename__ = "vacancies_seen"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
+    bh_job_order_id: Mapped[int] = mapped_column(Integer)
+    first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (UniqueConstraint("company_id", "bh_job_order_id"),)

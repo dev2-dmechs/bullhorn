@@ -8,16 +8,25 @@ Client: Goodall Brazier. Two Bullhorn tenants (Company A, Company B).
 This is a focused demonstration, not a platform. Production is a separate, later phase.
 
 ## ⚠️ CURRENT SCOPE — read this before anything else
-**Manual search only.** A recruiter picks a tenant, enters role requirements, and gets back
-candidates from that tenant with their PII redacted.
+**Manual search, plus vacancy polling (detection only).** A recruiter picks a tenant, enters
+role requirements, and gets back candidates from that tenant with their PII redacted.
+Separately (added to scope 2026-07-21), a manually-triggered "check for new vacancies"
+action polls Company A's Bullhorn for `JobOrder`s and reports which ones are new — it does
+**not** run matching against them.
+
+**In scope as of 2026-07-21:** the detection half of the simulated auto-match — manually
+triggered (a button, not a scheduler or webhook), `JobOrder` fetched by `dateAdded`, dedup
+via the new `vacancies_seen` table.
 
 **Out of scope right now — do not build, do not "prepare for":**
-- The simulated auto-match / "check for new vacancies" trigger
-- AI matching and scoring (prompts, `score` / `reasons`, matching endpoints)
+- Running AI matching/scoring against newly-detected vacancies
+- AI matching and scoring generally (prompts, `score` / `reasons`, matching endpoints,
+  `match_runs`, `match_results`)
 
-The sections below still describe those in full, because they are the eventual target and
-the scoping document promises them. But they are the *next* phase, not this one. If a task
-seems to need them, it is out of scope — stop and ask.
+The sections below still describe the full auto-match flow (detection *and* matching)
+because that is the eventual target and the scoping document promises it. Only the
+detection half is built now. If a task seems to need the matching half, it is out of
+scope — stop and ask.
 
 **One deliberate, narrow exception (2026-07-21):** `app/matching/client.py` exists —
 `get_openai_client()`, client construction only. No prompts, no scoring, no endpoint calls
@@ -119,6 +128,9 @@ wrong.
     Bullhorn, finds unseen vacancies, and runs the same matching against the other tenant.
     Only the trigger differs.
     This is NOT real-time detection. Do not build webhooks or background schedulers.
+    **As of 2026-07-21, only the detection half is in scope**: poll `JobOrder` by
+    `dateAdded`, diff against `vacancies_seen`, report which ones are new. Do not wire up
+    "runs the same matching" until the AI matching phase is separately greenlit.
 
 ### Role requirements — one shape for both triggers
 This is the input to both flows, the payload stored on `match_runs`, and what the prompt
@@ -159,15 +171,17 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
    company's candidates, because a persisted copy would itself be the harvestable list the
    whole promise guards against.
 
-   **Today Postgres holds ONE table**, because search is stateless in the current scope:
+   **Today Postgres holds TWO tables** (as of 2026-07-21, vacancy polling is in scope;
+   candidate search itself is still stateless):
      - `companies`      — tenant config and Bullhorn token state (see Bullhorn auth)
+     - `vacancies_seen` — external `JobOrder` IDs already reported by the poll, so a
+                          repeat check doesn't re-report the same vacancy as new
 
-   The three below are the eventual target. They land with the AI/auto-match work, not
-   before. Adding any of them now is out of scope.
+   The two below are still the eventual target for the matching phase. They land with the
+   AI/matching work, not before. Adding either now is out of scope.
      - `match_runs`     — role requirements, the tenant searched, trigger type, timestamp
      - `match_results`  — candidate_external_id, owner_name, company_id,
                           score, skills_score, experience_score, fit_score, reasons
-     - `vacancies_seen` — external vacancy IDs already processed
 
    `owner_name` is the **recruiter** who owns the candidate record — it is not candidate
    PII, and the scoping doc (§1, §3) explicitly requires showing it. It is permitted.

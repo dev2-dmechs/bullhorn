@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import candidates, companies
+from app.routers import candidates, companies, vacancies
 
 logging.basicConfig(level=logging.INFO)
 
@@ -28,6 +28,7 @@ app.add_middleware(
 
 app.include_router(companies.router)
 app.include_router(candidates.router)
+app.include_router(vacancies.router)
 
 
 @app.get("/health", tags=["health"])

@@ -162,7 +162,7 @@ async def list_latest_jobs(
     except BullhornAuthError as exc:
         raise HTTPException(status_code=502, detail="Bullhorn job order lookup failed") from exc
 
-    return [_to_job_schema(j) for j in jobs]
+    return [to_job_schema(j) for j in jobs]
 
 
 def _full_name(person: dict[str, Any] | None) -> str | None:
@@ -171,7 +171,7 @@ def _full_name(person: dict[str, Any] | None) -> str | None:
     return f"{person.get('firstName', '')} {person.get('lastName', '')}".strip() or None
 
 
-def _to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
+def to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
     categories = raw.get("categories", {}).get("data", []) if raw.get("categories") else []
     business_sectors = (
         raw.get("businessSectors", {}).get("data", []) if raw.get("businessSectors") else []

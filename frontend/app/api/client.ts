@@ -23,6 +23,7 @@ export type CandidateSearchResponse = components["schemas"]["CandidateSearchResp
 export type AnonymisedCandidate = components["schemas"]["AnonymisedCandidate"];
 export type CandidateResume = components["schemas"]["CandidateResume"];
 export type CandidateMatch = components["schemas"]["CandidateMatch"];
+export type NewVacancyCheckResponse = components["schemas"]["NewVacancyCheckResponse"];
 
 export function getConnection(companyId: string) {
   return request<ConnectionRead>(`/companies/${companyId}/connection`);
@@ -49,4 +50,8 @@ export function searchCandidates(companyId: string, body: CandidateSearchRequest
     method: "POST",
     body: JSON.stringify(body),
   });
+}
+
+export function checkNewVacancies() {
+  return request<NewVacancyCheckResponse>("/vacancies/check-new", { method: "POST" });
 }
