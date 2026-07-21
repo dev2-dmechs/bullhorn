@@ -35,6 +35,11 @@ class Settings(BaseSettings):
     bh_b_username: str = ""
     bh_b_password: str = ""
 
+    openai_api_key: str = ""
+    # 5th-gen model, mini tier (cost/capability match for the 4.1-mini this replaced).
+    # Confirmed as a valid model id for this account via a live call (2026-07-21).
+    openai_model: str = "gpt-5-mini"
+
     def credentials_for(self, company_id: str) -> TenantCredentials:
         prefix = f"bh_{company_id.lower()}_"
         return TenantCredentials(

@@ -165,12 +165,16 @@ export interface components {
             external_id: string;
             /** Company Id */
             company_id: string;
+            /** Title */
+            title: string | null;
             /** Category */
             category: string | null;
             /** Business Sector */
             business_sector: string | null;
             /** Owner Name */
             owner_name: string | null;
+            resume: components["schemas"]["CandidateResume"] | null;
+            match?: components["schemas"]["CandidateMatch"] | null;
         };
         /** BusinessSectorsSchema */
         BusinessSectorsSchema: {
@@ -180,6 +184,39 @@ export interface components {
             name: string;
             /** Date Added */
             date_added: string | null;
+        };
+        /**
+         * CandidateMatch
+         * @description `MatchScore` minus `candidate_id` — already keyed onto its `AnonymisedCandidate`.
+         */
+        CandidateMatch: {
+            /** Score */
+            score: number;
+            /** Skills Score */
+            skills_score: number;
+            /** Experience Score */
+            experience_score: number;
+            /** Fit Score */
+            fit_score: number;
+            /** Reasons */
+            reasons: string[];
+        };
+        /**
+         * CandidateResume
+         * @description The identity reveal. The candidate's CV is fetched and parsed live via Bullhorn's
+         *     résumé parser as part of the search response, never persisted (rule 1) and never
+         *     logged (rule 4). Deliberately its own nested type: this is the one point where PII is
+         *     allowed to leave, as a business decision, not the default shape of a candidate
+         *     response. `parsed` is Bullhorn's own structured-candidate output — shape is whatever
+         *     their parser returns, not remodelled here, since exact fields vary by resume.
+         */
+        CandidateResume: {
+            /** File Name */
+            file_name: string;
+            /** Parsed */
+            parsed: {
+                [key: string]: unknown;
+            };
         };
         /** CandidateSearchRequest */
         CandidateSearchRequest: {
@@ -191,6 +228,16 @@ export interface components {
             business_sector_ids?: number[];
             /** Country Ids */
             country_ids?: number[];
+            /** Title */
+            title?: string | null;
+            /** Description */
+            description?: string | null;
+            /**
+             * Limit
+             * @default 10
+             * @enum {integer}
+             */
+            limit: 10 | 20 | 30 | 40 | 50;
         };
         /** CandidateSearchResponse */
         CandidateSearchResponse: {

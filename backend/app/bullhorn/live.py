@@ -12,10 +12,31 @@ from app.models import Company
 log = logging.getLogger(__name__)
 
 TIMEOUT = httpx.Timeout(30.0)
+# Résumé parsing is slower than a normal query/search call — give it more room.
+PARSE_TIMEOUT = httpx.Timeout(60.0)
 MAX_AUTH_REDIRECTS = 5
 PING_PATH = "ping"
 MAX_CANDIDATES = 50
-CANDIDATE_SEARCH_FIELDS = "id,categories,businessSectors,owner,status"
+CANDIDATE_SEARCH_FIELDS = (
+    "id,categories,businessSectors,owner,status,occupation,"
+    "fileAttachments(id,type,name,contentType)"
+)
+RESUME_TYPE_MARKERS = ("cv", "resume")
+# Matches any candidate with at least one file attached — Bullhorn has no documented
+# boolean "has resume" field on Candidate, but a range query against fileAttachments.id
+# matches anything from id 1 upward.
+HAS_FILE_ATTACHMENT_CLAUSE = "fileAttachments.id:[1 TO 99999999999]"
+# Bullhorn's parseToCandidate `format` param accepts only this fixed set of values.
+RESUME_FORMAT_BY_EXTENSION = {
+    "pdf": "pdf",
+    "doc": "doc",
+    "docx": "docx",
+    "rtf": "rtf",
+    "odt": "odt",
+    "txt": "text",
+    "html": "html",
+    "htm": "html",
+}
 JOB_ORDER_FIELDS = (
     "id,title,status,employmentType,isOpen,isPublic,dateAdded,dateEnd,dateLastPublished,"
     "startDate,benefits,bonusPackage,payRate,salary,salaryUnit,publicDescription,"
@@ -28,6 +49,33 @@ JOB_ORDER_FIELDS = (
 
 class BullhornAuthError(RuntimeError):
     pass
+
+
+def find_resume_attachment(attachments: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """Pick the attachment to treat as the candidate's résumé.
+
+    Prefer one explicitly typed CV/résumé, but `type` is frequently null on this tenant
+    even for what's clearly a résumé (e.g. a plain "Firstname Lastname.docx" upload) —
+    Bullhorn's own `parsedResumeFile` field, which would normally disambiguate this, is
+    unpopulated here too. Since candidate search now only returns candidates with at
+    least one file attached (see HAS_FILE_ATTACHMENT_CLAUSE), falling back to "the first
+    attachment" is a safe default rather than silently treating them as resume-less."""
+    typed_match = next(
+        (
+            a
+            for a in attachments
+            if any(marker in (a.get("type") or "").lower() for marker in RESUME_TYPE_MARKERS)
+        ),
+        None,
+    )
+    if typed_match is not None:
+        return typed_match
+    return attachments[0] if attachments else None
+
+
+def _escape_lucene_phrase(text: str) -> str:
+    """Escape a value for embedding in a Lucene double-quoted phrase query."""
+    return text.replace("\\", "\\\\").replace('"', '\\"')
 
 
 class LiveBullhornClient:
@@ -135,19 +183,25 @@ class LiveBullhornClient:
 
     async def _get(self, path: str, params: dict[str, Any]) -> dict[str, Any]:
         token, rest_url = await self._session()
-        async with httpx.AsyncClient(timeout=TIMEOUT) as http:
-            response = await http.get(
-                f"{rest_url.rstrip('/')}/{path}", params={**params, "BhRestToken": token}
-            )
-
-            if response.status_code == 401:
-                log.info(
-                    "Bullhorn token expired for company %s; re-authenticating", self.company_id
-                )
-                token, rest_url = await self._login()
+        try:
+            async with httpx.AsyncClient(timeout=TIMEOUT) as http:
                 response = await http.get(
                     f"{rest_url.rstrip('/')}/{path}", params={**params, "BhRestToken": token}
                 )
+
+                if response.status_code == 401:
+                    log.info(
+                        "Bullhorn token expired for company %s; re-authenticating",
+                        self.company_id,
+                    )
+                    token, rest_url = await self._login()
+                    response = await http.get(
+                        f"{rest_url.rstrip('/')}/{path}", params={**params, "BhRestToken": token}
+                    )
+        except httpx.HTTPError as exc:
+            raise BullhornAuthError(
+                f"Company {self.company_id}: GET /{path} failed ({exc})"
+            ) from exc
 
         if response.status_code != 200:
             raise BullhornAuthError(
@@ -201,7 +255,10 @@ class LiveBullhornClient:
         skill_ids: list[int] | None = None,
         business_sector_ids: list[int] | None = None,
         country_ids: list[int] | None = None,
+        title: str | None = None,
+        limit: int = MAX_CANDIDATES,
     ) -> tuple[list[dict[str, Any]], int]:
+        limit = min(limit, MAX_CANDIDATES)
         clauses = []
         if category_ids:
             clauses.append(f"categories.id:({' OR '.join(str(i) for i in category_ids)})")
@@ -213,21 +270,28 @@ class LiveBullhornClient:
             )
         if country_ids:
             clauses.append(f"address.country.id:({' OR '.join(str(i) for i in country_ids)})")
+        if title and title.strip():
+            clauses.append(f'occupation:"{_escape_lucene_phrase(title.strip())}"')
         if not clauses:
             raise ValueError("search_candidates requires at least one filter")
+
+        clauses.append(HAS_FILE_ATTACHMENT_CLAUSE)
         query = " AND ".join(clauses)
 
         collected: list[dict[str, Any]] = []
         total = 0
         start = 0
-        while len(collected) < MAX_CANDIDATES:
+        while len(collected) < limit:
             payload = await self._get(
                 "search/Candidate",
                 {
                     "query": query,
                     "fields": CANDIDATE_SEARCH_FIELDS,
-                    "count": str(MAX_CANDIDATES - len(collected)),
+                    "count": str(limit - len(collected)),
                     "start": str(start),
+                    # Explicit, not just relying on Bullhorn's default: best-matching
+                    # candidates first.
+                    "orderBy": "-_score",
                 },
             )
             data: list[dict[str, Any]] = payload.get("data", [])
@@ -240,6 +304,85 @@ class LiveBullhornClient:
                 break
 
         return collected, total
+
+    async def download_candidate_file(
+        self, candidate_id: str, file_id: int | str
+    ) -> tuple[bytes, str]:
+        """Download raw file bytes for a candidate's attachment (e.g. their CV). Never
+        persisted and never logged — the caller must only log `candidate_id`, never this
+        content. Attachment id/name/type come from the caller (already fetched as part of
+        the candidate search) — this issues one GET, not a second lookup."""
+        token, rest_url = await self._session()
+        path = f"file/Candidate/{candidate_id}/{file_id}/raw"
+        try:
+            async with httpx.AsyncClient(timeout=TIMEOUT) as http:
+                response = await http.get(
+                    f"{rest_url.rstrip('/')}/{path}", params={"BhRestToken": token}
+                )
+                if response.status_code == 401:
+                    token, rest_url = await self._login()
+                    response = await http.get(
+                        f"{rest_url.rstrip('/')}/{path}", params={"BhRestToken": token}
+                    )
+        except httpx.HTTPError as exc:
+            raise BullhornAuthError(
+                f"Company {self.company_id}: file download failed ({exc})"
+            ) from exc
+
+        if response.status_code != 200:
+            raise BullhornAuthError(
+                f"Company {self.company_id}: file download failed (HTTP {response.status_code})"
+            )
+
+        content_type = response.headers.get("content-type", "application/octet-stream")
+        return response.content, content_type
+
+    async def parse_resume(
+        self, content: bytes, file_name: str, content_type: str
+    ) -> dict[str, Any]:
+        """POST an already-downloaded CV to Bullhorn's résumé parser and return the
+        structured candidate data it extracts.
+
+        Deliberate, scoped exception to the read-only rule: every other method here issues
+        GET only. This one POSTs, but `/resume/parseToCandidate` is parse-only — it reads
+        the uploaded file and returns structured JSON, it does not create, update, or
+        persist a Candidate (or any other entity) in Bullhorn. No entity id is referenced
+        in the request; there is nothing in Bullhorn for this call to mutate.
+        Never persisted and never logged — the caller must only log `candidate_id`, never
+        this content.
+
+        Per Bullhorn's docs, this is multipart/form-data with a `file` field — not a raw
+        body — and `format` must be one of a fixed set of values, not an arbitrary
+        extension."""
+        token, rest_url = await self._session()
+        extension = file_name.rsplit(".", 1)[-1].lower() if "." in file_name else ""
+        file_format = RESUME_FORMAT_BY_EXTENSION.get(extension, "pdf")
+        path = "resume/parseToCandidate"
+
+        async def _post(tok: str, url: str) -> httpx.Response:
+            async with httpx.AsyncClient(timeout=PARSE_TIMEOUT) as http:
+                return await http.post(
+                    f"{url.rstrip('/')}/{path}",
+                    params={"BhRestToken": tok, "format": file_format},
+                    files={"file": (file_name, content, content_type)},
+                )
+
+        try:
+            response = await _post(token, rest_url)
+            if response.status_code == 401:
+                token, rest_url = await self._login()
+                response = await _post(token, rest_url)
+        except httpx.HTTPError as exc:
+            raise BullhornAuthError(
+                f"Company {self.company_id}: resume parse failed ({exc})"
+            ) from exc
+
+        if response.status_code != 200:
+            raise BullhornAuthError(
+                f"Company {self.company_id}: resume parse failed (HTTP {response.status_code})"
+            )
+        payload: dict[str, Any] = response.json()
+        return payload
 
     async def list_countries(self) -> list[dict[str, Any]]:
         payload = await self._get("options/Country", {"count": "500", "start": "0"})
