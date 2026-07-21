@@ -50,6 +50,7 @@ async def search_candidates(
             category_ids=body.category_ids,
             skill_ids=body.skill_ids,
             business_sector_ids=body.business_sector_ids,
+            country_ids=body.country_ids,
         )
     except BullhornAuthError as exc:
         log.warning("Company %s: candidate search failed", company.id)

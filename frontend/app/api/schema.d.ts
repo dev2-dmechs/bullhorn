@@ -72,6 +72,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/companies/{company_id}/countries": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Countries */
+        get: operations["list_countries_companies__company_id__countries_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/companies/{company_id}/jobs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Latest Jobs */
+        get: operations["list_latest_jobs_companies__company_id__jobs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/search/{company_id}/candidates/search": {
         parameters: {
             query?: never;
@@ -110,6 +144,21 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AddressSchema */
+        AddressSchema: {
+            /** Address1 */
+            address1: string | null;
+            /** Address2 */
+            address2: string | null;
+            /** City */
+            city: string | null;
+            /** State */
+            state: string | null;
+            /** Zip */
+            zip: string | null;
+            /** Country Id */
+            country_id: number | null;
+        };
         /** AnonymisedCandidate */
         AnonymisedCandidate: {
             /** External Id */
@@ -140,6 +189,8 @@ export interface components {
             skill_ids?: number[];
             /** Business Sector Ids */
             business_sector_ids?: number[];
+            /** Country Ids */
+            country_ids?: number[];
         };
         /** CandidateSearchResponse */
         CandidateSearchResponse: {
@@ -192,6 +243,62 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /** JobOrderSchema */
+        JobOrderSchema: {
+            /** Id */
+            id: number;
+            /** Title */
+            title: string;
+            /** Status */
+            status: string | null;
+            /** Employment Type */
+            employment_type: string | null;
+            /** Is Open */
+            is_open: boolean | null;
+            /** Is Public */
+            is_public: number | null;
+            /** Date Added */
+            date_added: string | null;
+            /** Date End */
+            date_end: string | null;
+            /** Date Last Published */
+            date_last_published: string | null;
+            /** Start Date */
+            start_date: string | null;
+            address: components["schemas"]["AddressSchema"] | null;
+            /** Benefits */
+            benefits: string | null;
+            /** Bonus Package */
+            bonus_package: string | null;
+            /** Pay Rate */
+            pay_rate: number | null;
+            /** Salary */
+            salary: number | null;
+            /** Salary Unit */
+            salary_unit: string | null;
+            /** Public Description */
+            public_description: string | null;
+            /** Published Zip */
+            published_zip: string | null;
+            /** Travel Requirements */
+            travel_requirements: string | null;
+            /** Will Relocate */
+            will_relocate: boolean | null;
+            /** Will Sponsor */
+            will_sponsor: boolean | null;
+            /** Years Required */
+            years_required: number | null;
+            /** Category */
+            category: string | null;
+            /** Business Sector */
+            business_sector: string | null;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Published Category */
+            published_category: string | null;
+            /** Response User Name */
+            response_user_name: string | null;
         };
         /** TaxonomyOption */
         TaxonomyOption: {
@@ -339,6 +446,68 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TaxonomyOption"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_countries_companies__company_id__countries_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TaxonomyOption"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_latest_jobs_companies__company_id__jobs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOrderSchema"][];
                 };
             };
             /** @description Validation Error */

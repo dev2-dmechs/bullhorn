@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
 import type { AnonymisedCandidate } from "@/api/client";
-import { useBusinessSectors, useCandidateSearch, useCategories, useConnection, useSkills } from "@/api/hooks";
+import {
+  useBusinessSectors,
+  useCandidateSearch,
+  useCategories,
+  useConnection,
+  useCountries,
+  useSkills,
+} from "@/api/hooks";
 import { StatusDot } from "@/components/StatusDot";
 import { clearStoredCompany, getStoredCompany } from "@/lib/storage";
 
@@ -68,10 +75,12 @@ function SearchPanel({ companyId }: { companyId: string }) {
   const { data: categories, isLoading: categoriesLoading } = useCategories(companyId);
   const { data: businessSectors, isLoading: sectorsLoading } = useBusinessSectors(companyId);
   const { data: skills, isLoading: skillsLoading } = useSkills(companyId);
+  const { data: countries, isLoading: countriesLoading } = useCountries(companyId);
 
   const [categoryIds, setCategoryIds] = useState<number[]>([]);
   const [businessSectorIds, setBusinessSectorIds] = useState<number[]>([]);
   const [skillIds, setSkillIds] = useState<number[]>([]);
+  const [countryIds, setCountryIds] = useState<number[]>([]);
 
   const search = useCandidateSearch(companyId);
 
@@ -86,6 +95,10 @@ function SearchPanel({ companyId }: { companyId: string }) {
     [businessSectors],
   );
   const skillOptions = useMemo(() => (skills ?? []).map((s) => ({ id: s.id, name: s.name })), [skills]);
+  const countryOptions = useMemo(
+    () => (countries ?? []).map((c) => ({ id: c.id, name: c.name })),
+    [countries],
+  );
 
   function handleSearch() {
     if (!canSearch) return;
@@ -93,12 +106,13 @@ function SearchPanel({ companyId }: { companyId: string }) {
       category_ids: categoryIds,
       business_sector_ids: businessSectorIds,
       skill_ids: skillIds,
+      country_ids: countryIds,
     });
   }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <MultiSelect
           label="Category"
           required
@@ -120,6 +134,13 @@ function SearchPanel({ companyId }: { companyId: string }) {
           options={skillOptions}
           selected={skillIds}
           onChange={setSkillIds}
+        />
+        <MultiSelect
+          label="Country"
+          loading={countriesLoading}
+          options={countryOptions}
+          selected={countryIds}
+          onChange={setCountryIds}
         />
       </div>
 

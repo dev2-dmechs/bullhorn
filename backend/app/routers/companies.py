@@ -10,7 +10,14 @@ from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
 from app.config import get_settings
 from app.database import get_db
 from app.models import BusinessSector, Category, Company, Skill
-from app.schemas import BusinessSectorsSchema, CategorySchema, ConnectionRead, TaxonomyOption
+from app.schemas import (
+    AddressSchema,
+    BusinessSectorsSchema,
+    CategorySchema,
+    ConnectionRead,
+    JobOrderSchema,
+    TaxonomyOption,
+)
 
 log = logging.getLogger(__name__)
 
@@ -72,7 +79,7 @@ async def list_business_sectors(
     ]
 
 
-@router.get("/{company_id}/categories", response_model=list[CategorySchema])
+@router.get("/{company_id}/categories")
 async def list_categories(
     company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
 ) -> list[CategorySchema]:
@@ -104,7 +111,7 @@ async def list_categories(
     ]
 
 
-@router.get("/{company_id}/skills", response_model=list[TaxonomyOption])
+@router.get("/{company_id}/skills")
 async def list_skills(
     company_id: str, refresh: bool = False, db: AsyncSession = Depends(get_db)
 ) -> list[TaxonomyOption]:
@@ -121,6 +128,97 @@ async def list_skills(
 
     records = await _get_skills(db, company.id)
     return [TaxonomyOption(id=r.bh_skill_id, name=r.name) for r in records]
+
+
+@router.get("/{company_id}/countries", response_model=list[TaxonomyOption])
+async def list_countries(
+    company_id: str, db: AsyncSession = Depends(get_db)
+) -> list[TaxonomyOption]:
+    company = await _company(company_id, db)
+
+    client = LiveBullhornClient(company_id=company.id, db=db)
+    try:
+        options = await client.list_countries()
+    except BullhornAuthError as exc:
+        log.warning("Company %s: country lookup failed", company.id)
+        raise HTTPException(status_code=502, detail="Bullhorn country lookup failed") from exc
+
+    return [
+        TaxonomyOption(id=o["value"], name=o["label"])
+        for o in options
+        if o.get("value") and o.get("label")
+    ]
+
+
+@router.get("/{company_id}/jobs", response_model=list[JobOrderSchema])
+async def list_latest_jobs(
+    company_id: str, db: AsyncSession = Depends(get_db)
+) -> list[JobOrderSchema]:
+    company = await _company(company_id, db)
+
+    client = LiveBullhornClient(company_id=company.id, db=db)
+    try:
+        jobs = await client.list_latest_jobs(count=100)
+    except BullhornAuthError as exc:
+        raise HTTPException(status_code=502, detail="Bullhorn job order lookup failed") from exc
+
+    return [_to_job_schema(j) for j in jobs]
+
+
+def _full_name(person: dict[str, Any] | None) -> str | None:
+    if not person:
+        return None
+    return f"{person.get('firstName', '')} {person.get('lastName', '')}".strip() or None
+
+
+def _to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
+    categories = raw.get("categories", {}).get("data", []) if raw.get("categories") else []
+    business_sectors = (
+        raw.get("businessSectors", {}).get("data", []) if raw.get("businessSectors") else []
+    )
+    published_category = raw.get("publishedCategory")
+    address = raw.get("address")
+
+    return JobOrderSchema(
+        id=raw["id"],
+        title=raw["title"],
+        status=raw.get("status"),
+        employment_type=raw.get("employmentType"),
+        is_open=raw.get("isOpen"),
+        is_public=raw.get("isPublic"),
+        date_added=_parse_bh_timestamp(raw.get("dateAdded")),
+        date_end=_parse_bh_timestamp(raw.get("dateEnd")),
+        date_last_published=_parse_bh_timestamp(raw.get("dateLastPublished")),
+        start_date=_parse_bh_timestamp(raw.get("startDate")),
+        address=(
+            AddressSchema(
+                address1=address.get("address1"),
+                address2=address.get("address2"),
+                city=address.get("city"),
+                state=address.get("state"),
+                zip=address.get("zip"),
+                country_id=address.get("countryID"),
+            )
+            if address
+            else None
+        ),
+        benefits=raw.get("benefits"),
+        bonus_package=raw.get("bonusPackage"),
+        pay_rate=raw.get("payRate"),
+        salary=raw.get("salary"),
+        salary_unit=raw.get("salaryUnit"),
+        public_description=raw.get("publicDescription"),
+        published_zip=raw.get("publishedZip"),
+        travel_requirements=raw.get("travelRequirements"),
+        will_relocate=raw.get("willRelocate"),
+        will_sponsor=raw.get("willSponsor"),
+        years_required=raw.get("yearsRequired"),
+        category=categories[0]["name"] if categories else None,
+        business_sector=business_sectors[0]["name"] if business_sectors else None,
+        owner_name=_full_name(raw.get("owner")),
+        published_category=published_category.get("name") if published_category else None,
+        response_user_name=_full_name(raw.get("responseUser")),
+    )
 
 
 async def _get_business_sectors(db: AsyncSession, company_id: str) -> list[BusinessSector]:

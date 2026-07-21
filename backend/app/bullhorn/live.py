@@ -16,6 +16,14 @@ MAX_AUTH_REDIRECTS = 5
 PING_PATH = "ping"
 MAX_CANDIDATES = 500
 CANDIDATE_SEARCH_FIELDS = "id,categories,businessSectors,owner,status"
+JOB_ORDER_FIELDS = (
+    "id,title,status,employmentType,isOpen,isPublic,dateAdded,dateEnd,dateLastPublished,"
+    "startDate,benefits,bonusPackage,payRate,salary,salaryUnit,publicDescription,"
+    "publishedZip,travelRequirements,willRelocate,willSponsor,yearsRequired,"
+    "address(address1,address2,city,state,zip,countryID),"
+    "categories(id,name),businessSectors(id,name),owner(id,firstName,lastName),"
+    "publishedCategory(id,name),responseUser(id,firstName,lastName)"
+)
 
 
 class BullhornAuthError(RuntimeError):
@@ -192,6 +200,7 @@ class LiveBullhornClient:
         category_ids: list[int],
         skill_ids: list[int] | None = None,
         business_sector_ids: list[int] | None = None,
+        country_ids: list[int] | None = None,
     ) -> tuple[list[dict[str, Any]], int]:
         clauses = [f"categories.id:({' OR '.join(str(i) for i in category_ids)})"]
         if skill_ids:
@@ -200,6 +209,8 @@ class LiveBullhornClient:
             clauses.append(
                 f"businessSectors.id:({' OR '.join(str(i) for i in business_sector_ids)})"
             )
+        if country_ids:
+            clauses.append(f"address.country.id:({' OR '.join(str(i) for i in country_ids)})")
         query = " AND ".join(clauses)
 
         payload = await self._get(
@@ -214,3 +225,23 @@ class LiveBullhornClient:
         data: list[dict[str, Any]] = payload.get("data", [])
         total: int = payload.get("total", len(data))
         return data, total
+
+    async def list_countries(self) -> list[dict[str, Any]]:
+        payload = await self._get("options/Country", {"count": "500", "start": "0"})
+        options: list[dict[str, Any]] = payload.get("data", [])
+        if not options:
+            log.warning("Company %s: no options returned for Country", self.company_id)
+        return options
+
+    async def list_latest_jobs(self, count: int = 10) -> list[dict[str, Any]]:
+        payload = await self._get(
+            "query/JobOrder",
+            {
+                "where": "id>0",
+                "fields": JOB_ORDER_FIELDS,
+                "orderBy": "-dateAdded",
+                "count": str(count),
+            },
+        )
+        data: list[dict[str, Any]] = payload.get("data", [])
+        return data

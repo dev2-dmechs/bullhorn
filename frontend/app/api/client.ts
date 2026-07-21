@@ -38,6 +38,10 @@ export function getSkills(companyId: string) {
   return request<TaxonomyOption[]>(`/companies/${companyId}/skills`);
 }
 
+export function getCountries(companyId: string) {
+  return request<TaxonomyOption[]>(`/companies/${companyId}/countries`);
+}
+
 export function searchCandidates(companyId: string, body: CandidateSearchRequest) {
   return request<CandidateSearchResponse>(`/search/${companyId}/candidates/search`, {
     method: "POST",
