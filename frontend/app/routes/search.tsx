@@ -1,6 +1,10 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AnonymisedCandidate, CandidateMatch, JobOrderSchema } from "@/api/client";
+import type {
+  AnonymisedCandidate,
+  CandidateMatch,
+  JobOrderSchema,
+} from "@/api/client";
 import {
   useBusinessSectors,
   useCandidateSearch,
@@ -258,7 +262,9 @@ function JobFieldsTable({ job }: { job: JobOrderSchema }) {
               <td className="whitespace-nowrap bg-slate-50 px-2 py-1 font-medium text-slate-500">
                 {field}
               </td>
-              <td className="break-all px-2 py-1 text-slate-800">{formatFieldValue(value)}</td>
+              <td className="break-all px-2 py-1 text-slate-800">
+                {formatFieldValue(value)}
+              </td>
             </tr>
           ))}
         </tbody>
@@ -288,7 +294,7 @@ function NewVacanciesFeed({ companyId }: { companyId: string }) {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 max-h-[32rem] w-[28rem] overflow-y-auto rounded-lg bg-white p-2 shadow-xl">
+        <div className="absolute right-0 top-full z-30 mt-2 max-h-128 w-md overflow-y-auto rounded-lg bg-white p-2 shadow-xl">
           {jobs.length === 0 ? (
             <p className="px-3 py-4 text-sm text-slate-400">
               No new vacancies detected yet
@@ -300,11 +306,15 @@ function NewVacanciesFeed({ companyId }: { companyId: string }) {
                   <button
                     type="button"
                     onClick={() =>
-                      setExpandedJobId((prev) => (prev === job.id ? null : job.id))
+                      setExpandedJobId((prev) =>
+                        prev === job.id ? null : job.id,
+                      )
                     }
                     className="w-full text-left"
                   >
-                    <p className="text-sm font-medium text-slate-800">{job.title ?? "—"}</p>
+                    <p className="text-sm font-medium text-slate-800">
+                      {job.title ?? "—"}
+                    </p>
                     <p className="text-xs text-slate-400">
                       {job.date_added
                         ? new Date(job.date_added).toLocaleString()
@@ -339,7 +349,9 @@ function CheckVacanciesButton({
   async function handleClick() {
     try {
       const result = await mutateAsync();
-      void queryClient.invalidateQueries({ queryKey: ["new-vacancies", companyId] });
+      void queryClient.invalidateQueries({
+        queryKey: ["new-vacancies", companyId],
+      });
       const count = result.new_jobs.length;
       onResult(
         count === 0
