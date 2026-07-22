@@ -53,15 +53,22 @@ JOB_ORDER_FIELDS = (
     "reportToClientContact(id),shift(id),workersCompRate(id),"
     "owner(id,firstName,lastName),responseUser(id,firstName,lastName),"
     "publishedCategory(id,name),categories(id,name),businessSectors(id,name),"
-    "appointments(id),approvedPlacements(id),assignedUsers(id),certificationGroups(id),"
-    "certifications(id),fileAttachments(id),interviews(id),"
-    "jobOrderScreenerQuestions(id),notes(id),placements(id),sendouts(id),"
-    "shifts(id),skills(id,name),specialties(id,name),submissions(id),tasks(id),timeUnits(id),"
-    "webResponses(id)"
+    "skills(id,name),specialties(id,name)"
 )
 # Fields excluded above because this tenant 400s "Invalid field" on them (not licensed/
 # enabled here, discovered by testing live): billingProfile, clientCorporationLine,
 # jobCode, jobOrderIntegrations, jobShifts.
+# Every other to-many association (appointments, approvedPlacements, assignedUsers,
+# certificationGroups, certifications, fileAttachments, interviews,
+# jobOrderScreenerQuestions, notes, placements, sendouts, shifts, submissions, tasks,
+# timeUnits, webResponses) was dropped deliberately, not just for noise: Bullhorn silently
+# caps `count` on /query/JobOrder as more to-many associations are requested — confirmed
+# live at roughly floor(200 / num_to_many_associations), e.g. 20 associations capped a
+# requested count=100 down to 10 with no error. Keeping only the four associations the
+# app actually displays (categories, businessSectors, skills, specialties) raises that
+# ceiling to ~50 (floor(200/4)) — accepted tradeoff, confirmed 2026-07-23. MAX_JOB_ORDERS
+# below is our own API's upper bound on the `count` query param; it does NOT reflect this
+# Bullhorn-side cap, so a caller can request e.g. count=100 and still only get 50 back.
 
 
 class BullhornAuthError(RuntimeError):

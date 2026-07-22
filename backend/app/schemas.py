@@ -193,24 +193,8 @@ class JobOrderSchema(BaseModel):
     published_category: str | None
     categories: list[str]
     business_sectors: list[str]
-    appointments_ids: list[int]
-    approved_placements_ids: list[int]
-    assigned_users_ids: list[int]
-    certification_groups_ids: list[int]
-    certifications_ids: list[int]
-    file_attachments_ids: list[int]
-    interviews_ids: list[int]
-    job_order_screener_questions_ids: list[int]
-    notes_ids: list[int]
-    placements_ids: list[int]
-    sendouts_ids: list[int]
-    shifts_ids: list[int]
     skills: list[str]
     specialties: list[str]
-    submissions_ids: list[int]
-    tasks_ids: list[int]
-    time_units_ids: list[int]
-    web_responses_ids: list[int]
 
 
 class MatchCandidateInput(BaseModel):

@@ -192,10 +192,6 @@ def _to_address(address: dict[str, Any] | None) -> AddressSchema | None:
     )
 
 
-def _association_ids(raw: dict[str, Any], field: str) -> list[int]:
-    return [a["id"] for a in (raw.get(field, {}).get("data") or [])]
-
-
 def _association_names(raw: dict[str, Any], field: str) -> list[str]:
     return [a["name"] for a in (raw.get(field, {}).get("data") or []) if a.get("name")]
 
@@ -276,24 +272,8 @@ def to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
         published_category=(raw.get("publishedCategory") or {}).get("name"),
         categories=_association_names(raw, "categories"),
         business_sectors=_association_names(raw, "businessSectors"),
-        appointments_ids=_association_ids(raw, "appointments"),
-        approved_placements_ids=_association_ids(raw, "approvedPlacements"),
-        assigned_users_ids=_association_ids(raw, "assignedUsers"),
-        certification_groups_ids=_association_ids(raw, "certificationGroups"),
-        certifications_ids=_association_ids(raw, "certifications"),
-        file_attachments_ids=_association_ids(raw, "fileAttachments"),
-        interviews_ids=_association_ids(raw, "interviews"),
-        job_order_screener_questions_ids=_association_ids(raw, "jobOrderScreenerQuestions"),
-        notes_ids=_association_ids(raw, "notes"),
-        placements_ids=_association_ids(raw, "placements"),
-        sendouts_ids=_association_ids(raw, "sendouts"),
-        shifts_ids=_association_ids(raw, "shifts"),
         skills=_association_names(raw, "skills"),
         specialties=_association_names(raw, "specialties"),
-        submissions_ids=_association_ids(raw, "submissions"),
-        tasks_ids=_association_ids(raw, "tasks"),
-        time_units_ids=_association_ids(raw, "timeUnits"),
-        web_responses_ids=_association_ids(raw, "webResponses"),
     )
 
 

@@ -523,42 +523,10 @@ export interface components {
             categories: string[];
             /** Business Sectors */
             business_sectors: string[];
-            /** Appointments Ids */
-            appointments_ids: number[];
-            /** Approved Placements Ids */
-            approved_placements_ids: number[];
-            /** Assigned Users Ids */
-            assigned_users_ids: number[];
-            /** Certification Groups Ids */
-            certification_groups_ids: number[];
-            /** Certifications Ids */
-            certifications_ids: number[];
-            /** File Attachments Ids */
-            file_attachments_ids: number[];
-            /** Interviews Ids */
-            interviews_ids: number[];
-            /** Job Order Screener Questions Ids */
-            job_order_screener_questions_ids: number[];
-            /** Notes Ids */
-            notes_ids: number[];
-            /** Placements Ids */
-            placements_ids: number[];
-            /** Sendouts Ids */
-            sendouts_ids: number[];
-            /** Shifts Ids */
-            shifts_ids: number[];
             /** Skills */
             skills: string[];
             /** Specialties */
             specialties: string[];
-            /** Submissions Ids */
-            submissions_ids: number[];
-            /** Tasks Ids */
-            tasks_ids: number[];
-            /** Time Units Ids */
-            time_units_ids: number[];
-            /** Web Responses Ids */
-            web_responses_ids: number[];
         };
         /** JobOrderSyncResponse */
         JobOrderSyncResponse: {

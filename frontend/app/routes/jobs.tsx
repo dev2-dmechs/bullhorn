@@ -218,7 +218,7 @@ function SyncButton({ companyId }: { companyId: string }) {
       disabled={isPending}
       className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-60"
     >
-      {isPending ? "Syncing…" : "Sync from Bullhorn"}
+      {isPending ? "Syncing…" : "Manual sync from Bullhorn"}
     </button>
   );
 }
