@@ -115,6 +115,7 @@ class AddressSchema(BaseModel):
     state: str | None
     zip: str | None
     country_id: int | None
+    country_name: str | None
 
 
 class JobOrderSchema(BaseModel):
@@ -179,87 +180,6 @@ class JobOrderSchema(BaseModel):
     date_last_published: datetime | None
     start_date: datetime | None
     time_and_labor_enabled_date: datetime | None
-    correlated_custom_date1: datetime | None
-    correlated_custom_date2: datetime | None
-    correlated_custom_date3: datetime | None
-    correlated_custom_float1: float | None
-    correlated_custom_float2: float | None
-    correlated_custom_float3: float | None
-    correlated_custom_int1: int | None
-    correlated_custom_int2: int | None
-    correlated_custom_int3: int | None
-    correlated_custom_text1: str | None
-    correlated_custom_text2: str | None
-    correlated_custom_text3: str | None
-    correlated_custom_text4: str | None
-    correlated_custom_text5: str | None
-    correlated_custom_text6: str | None
-    correlated_custom_text7: str | None
-    correlated_custom_text8: str | None
-    correlated_custom_text9: str | None
-    correlated_custom_text10: str | None
-    correlated_custom_text_block1: str | None
-    correlated_custom_text_block2: str | None
-    correlated_custom_text_block3: str | None
-    custom_date1: datetime | None
-    custom_date2: datetime | None
-    custom_date3: datetime | None
-    custom_float1: float | None
-    custom_float2: float | None
-    custom_float3: float | None
-    custom_int1: int | None
-    custom_int2: int | None
-    custom_int3: int | None
-    custom_int4: int | None
-    custom_int5: int | None
-    custom_int6: int | None
-    custom_int7: int | None
-    custom_int8: int | None
-    custom_text1: str | None
-    custom_text2: str | None
-    custom_text3: str | None
-    custom_text4: str | None
-    custom_text5: str | None
-    custom_text6: str | None
-    custom_text7: str | None
-    custom_text8: str | None
-    custom_text9: str | None
-    custom_text10: str | None
-    custom_text11: str | None
-    custom_text12: str | None
-    custom_text13: str | None
-    custom_text14: str | None
-    custom_text15: str | None
-    custom_text16: str | None
-    custom_text17: str | None
-    custom_text18: str | None
-    custom_text19: str | None
-    custom_text20: str | None
-    custom_text21: str | None
-    custom_text22: str | None
-    custom_text23: str | None
-    custom_text24: str | None
-    custom_text25: str | None
-    custom_text26: str | None
-    custom_text27: str | None
-    custom_text28: str | None
-    custom_text29: str | None
-    custom_text30: str | None
-    custom_text31: str | None
-    custom_text32: str | None
-    custom_text33: str | None
-    custom_text34: str | None
-    custom_text35: str | None
-    custom_text36: str | None
-    custom_text37: str | None
-    custom_text38: str | None
-    custom_text39: str | None
-    custom_text40: str | None
-    custom_text_block1: str | None
-    custom_text_block2: str | None
-    custom_text_block3: str | None
-    custom_text_block4: str | None
-    custom_text_block5: str | None
     branch_id: int | None
     client_contact_id: int | None
     client_corporation_id: int | None
@@ -271,8 +191,8 @@ class JobOrderSchema(BaseModel):
     owner_name: str | None
     response_user_name: str | None
     published_category: str | None
-    category: str | None
-    business_sector: str | None
+    categories: list[str]
+    business_sectors: list[str]
     appointments_ids: list[int]
     approved_placements_ids: list[int]
     assigned_users_ids: list[int]
@@ -285,8 +205,8 @@ class JobOrderSchema(BaseModel):
     placements_ids: list[int]
     sendouts_ids: list[int]
     shifts_ids: list[int]
-    skills_ids: list[int]
-    specialties_ids: list[int]
+    skills: list[str]
+    specialties: list[str]
     submissions_ids: list[int]
     tasks_ids: list[int]
     time_units_ids: list[int]

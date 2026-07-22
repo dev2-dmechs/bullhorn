@@ -150,12 +150,12 @@ async def list_countries(
     ]
 
 
-@router.get("/{company_id}/jobs", response_model=list[JobOrderSchema])
+@router.get("/{company_id}/jobs")
 async def list_latest_jobs(
     company_id: str,
     count: int = Query(default=100, ge=1, le=MAX_JOB_ORDERS),
     db: AsyncSession = Depends(get_db),
-) -> list[JobOrderSchema]:
+) -> list[dict[str, Any]]:
     company = await _company(company_id, db)
 
     client = LiveBullhornClient(company_id=company.id, db=db)
@@ -164,7 +164,12 @@ async def list_latest_jobs(
     except BullhornAuthError as exc:
         raise HTTPException(status_code=502, detail="Bullhorn job order lookup failed") from exc
 
-    return [to_job_schema(j) for j in jobs]
+    return jobs
+
+
+# *******************
+# Helpers
+# *******************
 
 
 def _full_name(person: dict[str, Any] | None) -> str | None:
@@ -183,6 +188,7 @@ def _to_address(address: dict[str, Any] | None) -> AddressSchema | None:
         state=address.get("state"),
         zip=address.get("zip"),
         country_id=address.get("countryID"),
+        country_name=address.get("countryName"),
     )
 
 
@@ -190,8 +196,8 @@ def _association_ids(raw: dict[str, Any], field: str) -> list[int]:
     return [a["id"] for a in (raw.get(field, {}).get("data") or [])]
 
 
-def _association_name(raw: dict[str, Any], field: str) -> str | None:
-    return (raw.get(field, {}).get("data") or [{}])[0].get("name") if raw.get(field) else None
+def _association_names(raw: dict[str, Any], field: str) -> list[str]:
+    return [a["name"] for a in (raw.get(field, {}).get("data") or []) if a.get("name")]
 
 
 def to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
@@ -257,87 +263,6 @@ def to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
         date_last_published=_parse_bh_timestamp(raw.get("dateLastPublished")),
         start_date=_parse_bh_timestamp(raw.get("startDate")),
         time_and_labor_enabled_date=_parse_bh_timestamp(raw.get("timeAndLaborEnabledDate")),
-        correlated_custom_date1=_parse_bh_timestamp(raw.get("correlatedCustomDate1")),
-        correlated_custom_date2=_parse_bh_timestamp(raw.get("correlatedCustomDate2")),
-        correlated_custom_date3=_parse_bh_timestamp(raw.get("correlatedCustomDate3")),
-        correlated_custom_float1=raw.get("correlatedCustomFloat1"),
-        correlated_custom_float2=raw.get("correlatedCustomFloat2"),
-        correlated_custom_float3=raw.get("correlatedCustomFloat3"),
-        correlated_custom_int1=raw.get("correlatedCustomInt1"),
-        correlated_custom_int2=raw.get("correlatedCustomInt2"),
-        correlated_custom_int3=raw.get("correlatedCustomInt3"),
-        correlated_custom_text1=raw.get("correlatedCustomText1"),
-        correlated_custom_text2=raw.get("correlatedCustomText2"),
-        correlated_custom_text3=raw.get("correlatedCustomText3"),
-        correlated_custom_text4=raw.get("correlatedCustomText4"),
-        correlated_custom_text5=raw.get("correlatedCustomText5"),
-        correlated_custom_text6=raw.get("correlatedCustomText6"),
-        correlated_custom_text7=raw.get("correlatedCustomText7"),
-        correlated_custom_text8=raw.get("correlatedCustomText8"),
-        correlated_custom_text9=raw.get("correlatedCustomText9"),
-        correlated_custom_text10=raw.get("correlatedCustomText10"),
-        correlated_custom_text_block1=raw.get("correlatedCustomTextBlock1"),
-        correlated_custom_text_block2=raw.get("correlatedCustomTextBlock2"),
-        correlated_custom_text_block3=raw.get("correlatedCustomTextBlock3"),
-        custom_date1=_parse_bh_timestamp(raw.get("customDate1")),
-        custom_date2=_parse_bh_timestamp(raw.get("customDate2")),
-        custom_date3=_parse_bh_timestamp(raw.get("customDate3")),
-        custom_float1=raw.get("customFloat1"),
-        custom_float2=raw.get("customFloat2"),
-        custom_float3=raw.get("customFloat3"),
-        custom_int1=raw.get("customInt1"),
-        custom_int2=raw.get("customInt2"),
-        custom_int3=raw.get("customInt3"),
-        custom_int4=raw.get("customInt4"),
-        custom_int5=raw.get("customInt5"),
-        custom_int6=raw.get("customInt6"),
-        custom_int7=raw.get("customInt7"),
-        custom_int8=raw.get("customInt8"),
-        custom_text1=raw.get("customText1"),
-        custom_text2=raw.get("customText2"),
-        custom_text3=raw.get("customText3"),
-        custom_text4=raw.get("customText4"),
-        custom_text5=raw.get("customText5"),
-        custom_text6=raw.get("customText6"),
-        custom_text7=raw.get("customText7"),
-        custom_text8=raw.get("customText8"),
-        custom_text9=raw.get("customText9"),
-        custom_text10=raw.get("customText10"),
-        custom_text11=raw.get("customText11"),
-        custom_text12=raw.get("customText12"),
-        custom_text13=raw.get("customText13"),
-        custom_text14=raw.get("customText14"),
-        custom_text15=raw.get("customText15"),
-        custom_text16=raw.get("customText16"),
-        custom_text17=raw.get("customText17"),
-        custom_text18=raw.get("customText18"),
-        custom_text19=raw.get("customText19"),
-        custom_text20=raw.get("customText20"),
-        custom_text21=raw.get("customText21"),
-        custom_text22=raw.get("customText22"),
-        custom_text23=raw.get("customText23"),
-        custom_text24=raw.get("customText24"),
-        custom_text25=raw.get("customText25"),
-        custom_text26=raw.get("customText26"),
-        custom_text27=raw.get("customText27"),
-        custom_text28=raw.get("customText28"),
-        custom_text29=raw.get("customText29"),
-        custom_text30=raw.get("customText30"),
-        custom_text31=raw.get("customText31"),
-        custom_text32=raw.get("customText32"),
-        custom_text33=raw.get("customText33"),
-        custom_text34=raw.get("customText34"),
-        custom_text35=raw.get("customText35"),
-        custom_text36=raw.get("customText36"),
-        custom_text37=raw.get("customText37"),
-        custom_text38=raw.get("customText38"),
-        custom_text39=raw.get("customText39"),
-        custom_text40=raw.get("customText40"),
-        custom_text_block1=raw.get("customTextBlock1"),
-        custom_text_block2=raw.get("customTextBlock2"),
-        custom_text_block3=raw.get("customTextBlock3"),
-        custom_text_block4=raw.get("customTextBlock4"),
-        custom_text_block5=raw.get("customTextBlock5"),
         branch_id=(raw.get("branch") or {}).get("id"),
         client_contact_id=(raw.get("clientContact") or {}).get("id"),
         client_corporation_id=(raw.get("clientCorporation") or {}).get("id"),
@@ -349,8 +274,8 @@ def to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
         owner_name=_full_name(raw.get("owner")),
         response_user_name=_full_name(raw.get("responseUser")),
         published_category=(raw.get("publishedCategory") or {}).get("name"),
-        category=_association_name(raw, "categories"),
-        business_sector=_association_name(raw, "businessSectors"),
+        categories=_association_names(raw, "categories"),
+        business_sectors=_association_names(raw, "businessSectors"),
         appointments_ids=_association_ids(raw, "appointments"),
         approved_placements_ids=_association_ids(raw, "approvedPlacements"),
         assigned_users_ids=_association_ids(raw, "assignedUsers"),
@@ -363,8 +288,8 @@ def to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
         placements_ids=_association_ids(raw, "placements"),
         sendouts_ids=_association_ids(raw, "sendouts"),
         shifts_ids=_association_ids(raw, "shifts"),
-        skills_ids=_association_ids(raw, "skills"),
-        specialties_ids=_association_ids(raw, "specialties"),
+        skills=_association_names(raw, "skills"),
+        specialties=_association_names(raw, "specialties"),
         submissions_ids=_association_ids(raw, "submissions"),
         tasks_ids=_association_ids(raw, "tasks"),
         time_units_ids=_association_ids(raw, "timeUnits"),

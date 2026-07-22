@@ -37,7 +37,8 @@ RESUME_FORMAT_BY_EXTENSION = {
 JOB_ORDER_ID_CHUNK = 200
 EVENT_MAX_EVENTS = 100
 JOB_ORDER_FIELDS = (
-    "id,address(address1,address2,city,state,zip,countryID),benefits,billRateCategoryID,"
+    "id,address(address1,address2,city,state,zip,countryID,countryName),benefits,"
+    "billRateCategoryID,"
     "bonusPackage,branchCode,certificationList,clientBillRate,costCenter,degreeList,"
     "description,durationWeeks,educationDegree,employmentType,estimatedEndDate,"
     "externalCategoryID,externalID,feeArrangement,hoursOfOperation,hoursPerWeek,"
@@ -48,23 +49,6 @@ JOB_ORDER_FIELDS = (
     "title,travelRequirements,type,willRelocate,willRelocateInt,willSponsor,yearsRequired,"
     "dateAdded,dateClosed,dateEnd,dateLastExported,dateLastModified,dateLastPublished,"
     "startDate,timeAndLaborEnabledDate,"
-    "correlatedCustomDate1,correlatedCustomDate2,correlatedCustomDate3,"
-    "correlatedCustomFloat1,correlatedCustomFloat2,correlatedCustomFloat3,"
-    "correlatedCustomInt1,correlatedCustomInt2,correlatedCustomInt3,"
-    "correlatedCustomText1,correlatedCustomText2,correlatedCustomText3,correlatedCustomText4,"
-    "correlatedCustomText5,correlatedCustomText6,correlatedCustomText7,correlatedCustomText8,"
-    "correlatedCustomText9,correlatedCustomText10,"
-    "correlatedCustomTextBlock1,correlatedCustomTextBlock2,correlatedCustomTextBlock3,"
-    "customDate1,customDate2,customDate3,customFloat1,customFloat2,customFloat3,"
-    "customInt1,customInt2,customInt3,customInt4,customInt5,customInt6,customInt7,customInt8,"
-    "customText1,customText2,customText3,customText4,customText5,customText6,customText7,"
-    "customText8,customText9,customText10,customText11,customText12,customText13,"
-    "customText14,customText15,customText16,customText17,customText18,customText19,"
-    "customText20,customText21,customText22,customText23,customText24,customText25,"
-    "customText26,customText27,customText28,customText29,customText30,customText31,"
-    "customText32,customText33,customText34,customText35,customText36,customText37,"
-    "customText38,customText39,customText40,"
-    "customTextBlock1,customTextBlock2,customTextBlock3,customTextBlock4,customTextBlock5,"
     "branch(id),clientContact(id),clientCorporation(id),location(id),opportunity(id),"
     "reportToClientContact(id),shift(id),workersCompRate(id),"
     "owner(id,firstName,lastName),responseUser(id,firstName,lastName),"
@@ -72,7 +56,7 @@ JOB_ORDER_FIELDS = (
     "appointments(id),approvedPlacements(id),assignedUsers(id),certificationGroups(id),"
     "certifications(id),fileAttachments(id),interviews(id),"
     "jobOrderScreenerQuestions(id),notes(id),placements(id),sendouts(id),"
-    "shifts(id),skills(id),specialties(id),submissions(id),tasks(id),timeUnits(id),"
+    "shifts(id),skills(id,name),specialties(id,name),submissions(id),tasks(id),timeUnits(id),"
     "webResponses(id)"
 )
 # Fields excluded above because this tenant 400s "Invalid field" on them (not licensed/

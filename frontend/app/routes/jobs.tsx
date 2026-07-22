@@ -1,8 +1,17 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useState } from "react";
+import { type MouseEvent, useEffect, useState } from "react";
 import { Link, useParams } from "react-router";
-import type { JobOrderSchema } from "@/api/client";
-import { useStoredJobOrders, useSyncJobOrders } from "@/api/hooks";
+import type {
+  AnonymisedCandidate,
+  CandidateSearchRequest,
+  JobOrderSchema,
+} from "@/api/client";
+import {
+  useCandidateSearch,
+  useStoredJobOrders,
+  useSyncJobOrders,
+} from "@/api/hooks";
+import { otherCompany } from "@/lib/companies";
 
 function formatFieldValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
@@ -48,7 +57,7 @@ function JobDetailModal({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex max-h-[90vh] w-full max-w-2xl flex-col animate-[panel-in_0.15s_ease-out] overflow-y-auto rounded-xl bg-white shadow-2xl"
+        className="flex max-h-[90vh] w-full max-w-7xl flex-col animate-[panel-in_0.15s_ease-out] overflow-y-auto rounded-xl bg-white shadow-2xl"
       >
         <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
           <span className="text-sm font-semibold text-brand-navy">
@@ -68,6 +77,126 @@ function JobDetailModal({
         </div>
       </div>
     </div>
+  );
+}
+
+function buildCandidateSearchPayload(
+  job: JobOrderSchema,
+): CandidateSearchRequest {
+  return {
+    country_ids: job.address?.country_id ? [job.address.country_id] : [],
+    title: job.title,
+    description: job.description,
+    limit: 10,
+  };
+}
+
+function CandidateResultsModal({
+  job,
+  candidates,
+  onClose,
+}: {
+  job: JobOrderSchema;
+  candidates: AnonymisedCandidate[];
+  onClose: () => void;
+}) {
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-brand-navy/30 p-4"
+      onClick={onClose}
+    >
+      <div
+        onClick={(e) => e.stopPropagation()}
+        className="flex max-h-[90vh] w-full max-w-7xl flex-col animate-[panel-in_0.15s_ease-out] overflow-y-auto rounded-xl bg-white shadow-2xl"
+      >
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
+          <span className="text-sm font-semibold text-brand-navy">
+            Candidates for {job.title ?? `Job #${job.id}`}
+          </span>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close"
+            className="text-slate-400 transition hover:text-brand-navy"
+          >
+            ✕
+          </button>
+        </div>
+        <div className="px-6 py-6">
+          {candidates.length === 0 ? (
+            <p className="text-sm text-slate-400">
+              No candidates matched this job's category/skills/sector/title.
+            </p>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead className="bg-brand-navy text-slate-200">
+                <tr>
+                  <th className="px-4 py-2 font-medium">Candidate ID</th>
+                  <th className="px-4 py-2 font-medium">Title</th>
+                  <th className="px-4 py-2 font-medium">Category</th>
+                  <th className="px-4 py-2 font-medium">Business sector</th>
+                  <th className="px-4 py-2 font-medium">Owner</th>
+                  <th className="px-4 py-2 font-medium">Owning company</th>
+                  <th className="px-4 py-2 font-medium">CV on file</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {candidates.map((c) => (
+                  <tr key={c.external_id}>
+                    <td className="px-4 py-2 text-slate-400">
+                      #{c.external_id}
+                    </td>
+                    <td className="px-4 py-2">{c.title ?? "—"}</td>
+                    <td className="px-4 py-2">{c.category ?? "—"}</td>
+                    <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
+                    <td className="px-4 py-2">
+                      {c.owner_name ?? "Unassigned"}
+                    </td>
+                    <td className="px-4 py-2">{c.company_id}</td>
+                    <td className="px-4 py-2">{c.resume ? "Yes" : "—"}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function CheckCandidatesButton({
+  job,
+  candidatePoolCompanyId,
+  onResults,
+  onError,
+}: {
+  job: JobOrderSchema;
+  candidatePoolCompanyId: string;
+  onResults: (job: JobOrderSchema, candidates: AnonymisedCandidate[]) => void;
+  onError: () => void;
+}) {
+  const { mutateAsync, isPending } = useCandidateSearch(candidatePoolCompanyId);
+
+  async function handleClick(e: MouseEvent) {
+    e.stopPropagation();
+    try {
+      const result = await mutateAsync(buildCandidateSearchPayload(job));
+      onResults(job, result.candidates);
+    } catch {
+      onError();
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isPending}
+      className="rounded-full bg-brand-teal-light px-3 py-1 text-xs font-medium text-brand-teal-dark transition hover:bg-brand-teal-light/70 disabled:opacity-60"
+    >
+      {isPending ? "Checking…" : "Check Candidates"}
+    </button>
   );
 }
 
@@ -97,8 +226,20 @@ function SyncButton({ companyId }: { companyId: string }) {
 export default function Jobs() {
   const { companyId } = useParams<{ companyId: string }>();
   const [selected, setSelected] = useState<JobOrderSchema | null>(null);
+  const [candidateResults, setCandidateResults] = useState<{
+    job: JobOrderSchema;
+    candidates: AnonymisedCandidate[];
+  } | null>(null);
+  const [toast, setToast] = useState<string | null>(null);
   const { data, isLoading } = useStoredJobOrders(companyId ?? "");
   const jobs = data ?? [];
+  const candidatePoolCompanyId = otherCompany(companyId ?? "");
+
+  useEffect(() => {
+    if (!toast) return;
+    const timer = setTimeout(() => setToast(null), 3000);
+    return () => clearTimeout(timer);
+  }, [toast]);
 
   return (
     <div className="min-h-screen">
@@ -117,7 +258,7 @@ export default function Jobs() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="mx-auto w-full max-w-7xl px-6 py-8">
         {isLoading ? (
           <p className="text-sm text-slate-400">Loading job orders…</p>
         ) : jobs.length === 0 ? (
@@ -141,9 +282,12 @@ export default function Jobs() {
                     <th className="px-4 py-2 font-medium">Status</th>
                     <th className="px-4 py-2 font-medium">Category</th>
                     <th className="px-4 py-2 font-medium">Business sector</th>
+                    <th className="px-4 py-2 font-medium">Skills</th>
+                    <th className="px-4 py-2 font-medium">Country</th>
                     <th className="px-4 py-2 font-medium">Employment type</th>
                     <th className="px-4 py-2 font-medium">Owner</th>
                     <th className="px-4 py-2 font-medium">Date added</th>
+                    <th className="px-4 py-2 font-medium">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -156,9 +300,21 @@ export default function Jobs() {
                       <td className="px-4 py-2 text-slate-400">#{job.id}</td>
                       <td className="px-4 py-2">{job.title ?? "—"}</td>
                       <td className="px-4 py-2">{job.status ?? "—"}</td>
-                      <td className="px-4 py-2">{job.category ?? "—"}</td>
                       <td className="px-4 py-2">
-                        {job.business_sector ?? "—"}
+                        {job.categories.length
+                          ? job.categories.join(", ")
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-2">
+                        {job.business_sectors.length
+                          ? job.business_sectors.join(", ")
+                          : "—"}
+                      </td>
+                      <td className="px-4 py-2">
+                        {job.skills.length ? job.skills.join(", ") : "—"}
+                      </td>
+                      <td className="px-4 py-2">
+                        {job.address?.country_name ?? "—"}
                       </td>
                       <td className="px-4 py-2">
                         {job.employment_type ?? "—"}
@@ -168,6 +324,16 @@ export default function Jobs() {
                         {job.date_added
                           ? new Date(job.date_added).toLocaleString()
                           : "—"}
+                      </td>
+                      <td className="px-4 py-2">
+                        <CheckCandidatesButton
+                          job={job}
+                          candidatePoolCompanyId={candidatePoolCompanyId}
+                          onResults={(j, candidates) =>
+                            setCandidateResults({ job: j, candidates })
+                          }
+                          onError={() => setToast("Candidate check failed")}
+                        />
                       </td>
                     </tr>
                   ))}
@@ -180,6 +346,20 @@ export default function Jobs() {
 
       {selected && (
         <JobDetailModal job={selected} onClose={() => setSelected(null)} />
+      )}
+
+      {candidateResults && (
+        <CandidateResultsModal
+          job={candidateResults.job}
+          candidates={candidateResults.candidates}
+          onClose={() => setCandidateResults(null)}
+        />
+      )}
+
+      {toast && (
+        <div className="fixed bottom-6 left-1/2 z-50 -translate-x-1/2 animate-[panel-in_0.15s_ease-out] rounded-full bg-brand-navy px-5 py-2.5 text-sm font-medium text-white shadow-xl shadow-brand-navy/30">
+          {toast}
+        </div>
       )}
     </div>
   );

@@ -226,6 +226,8 @@ export interface components {
             zip: string | null;
             /** Country Id */
             country_id: number | null;
+            /** Country Name */
+            country_name: string | null;
         };
         /** AnonymisedCandidate */
         AnonymisedCandidate: {
@@ -495,168 +497,6 @@ export interface components {
             start_date: string | null;
             /** Time And Labor Enabled Date */
             time_and_labor_enabled_date: string | null;
-            /** Correlated Custom Date1 */
-            correlated_custom_date1: string | null;
-            /** Correlated Custom Date2 */
-            correlated_custom_date2: string | null;
-            /** Correlated Custom Date3 */
-            correlated_custom_date3: string | null;
-            /** Correlated Custom Float1 */
-            correlated_custom_float1: number | null;
-            /** Correlated Custom Float2 */
-            correlated_custom_float2: number | null;
-            /** Correlated Custom Float3 */
-            correlated_custom_float3: number | null;
-            /** Correlated Custom Int1 */
-            correlated_custom_int1: number | null;
-            /** Correlated Custom Int2 */
-            correlated_custom_int2: number | null;
-            /** Correlated Custom Int3 */
-            correlated_custom_int3: number | null;
-            /** Correlated Custom Text1 */
-            correlated_custom_text1: string | null;
-            /** Correlated Custom Text2 */
-            correlated_custom_text2: string | null;
-            /** Correlated Custom Text3 */
-            correlated_custom_text3: string | null;
-            /** Correlated Custom Text4 */
-            correlated_custom_text4: string | null;
-            /** Correlated Custom Text5 */
-            correlated_custom_text5: string | null;
-            /** Correlated Custom Text6 */
-            correlated_custom_text6: string | null;
-            /** Correlated Custom Text7 */
-            correlated_custom_text7: string | null;
-            /** Correlated Custom Text8 */
-            correlated_custom_text8: string | null;
-            /** Correlated Custom Text9 */
-            correlated_custom_text9: string | null;
-            /** Correlated Custom Text10 */
-            correlated_custom_text10: string | null;
-            /** Correlated Custom Text Block1 */
-            correlated_custom_text_block1: string | null;
-            /** Correlated Custom Text Block2 */
-            correlated_custom_text_block2: string | null;
-            /** Correlated Custom Text Block3 */
-            correlated_custom_text_block3: string | null;
-            /** Custom Date1 */
-            custom_date1: string | null;
-            /** Custom Date2 */
-            custom_date2: string | null;
-            /** Custom Date3 */
-            custom_date3: string | null;
-            /** Custom Float1 */
-            custom_float1: number | null;
-            /** Custom Float2 */
-            custom_float2: number | null;
-            /** Custom Float3 */
-            custom_float3: number | null;
-            /** Custom Int1 */
-            custom_int1: number | null;
-            /** Custom Int2 */
-            custom_int2: number | null;
-            /** Custom Int3 */
-            custom_int3: number | null;
-            /** Custom Int4 */
-            custom_int4: number | null;
-            /** Custom Int5 */
-            custom_int5: number | null;
-            /** Custom Int6 */
-            custom_int6: number | null;
-            /** Custom Int7 */
-            custom_int7: number | null;
-            /** Custom Int8 */
-            custom_int8: number | null;
-            /** Custom Text1 */
-            custom_text1: string | null;
-            /** Custom Text2 */
-            custom_text2: string | null;
-            /** Custom Text3 */
-            custom_text3: string | null;
-            /** Custom Text4 */
-            custom_text4: string | null;
-            /** Custom Text5 */
-            custom_text5: string | null;
-            /** Custom Text6 */
-            custom_text6: string | null;
-            /** Custom Text7 */
-            custom_text7: string | null;
-            /** Custom Text8 */
-            custom_text8: string | null;
-            /** Custom Text9 */
-            custom_text9: string | null;
-            /** Custom Text10 */
-            custom_text10: string | null;
-            /** Custom Text11 */
-            custom_text11: string | null;
-            /** Custom Text12 */
-            custom_text12: string | null;
-            /** Custom Text13 */
-            custom_text13: string | null;
-            /** Custom Text14 */
-            custom_text14: string | null;
-            /** Custom Text15 */
-            custom_text15: string | null;
-            /** Custom Text16 */
-            custom_text16: string | null;
-            /** Custom Text17 */
-            custom_text17: string | null;
-            /** Custom Text18 */
-            custom_text18: string | null;
-            /** Custom Text19 */
-            custom_text19: string | null;
-            /** Custom Text20 */
-            custom_text20: string | null;
-            /** Custom Text21 */
-            custom_text21: string | null;
-            /** Custom Text22 */
-            custom_text22: string | null;
-            /** Custom Text23 */
-            custom_text23: string | null;
-            /** Custom Text24 */
-            custom_text24: string | null;
-            /** Custom Text25 */
-            custom_text25: string | null;
-            /** Custom Text26 */
-            custom_text26: string | null;
-            /** Custom Text27 */
-            custom_text27: string | null;
-            /** Custom Text28 */
-            custom_text28: string | null;
-            /** Custom Text29 */
-            custom_text29: string | null;
-            /** Custom Text30 */
-            custom_text30: string | null;
-            /** Custom Text31 */
-            custom_text31: string | null;
-            /** Custom Text32 */
-            custom_text32: string | null;
-            /** Custom Text33 */
-            custom_text33: string | null;
-            /** Custom Text34 */
-            custom_text34: string | null;
-            /** Custom Text35 */
-            custom_text35: string | null;
-            /** Custom Text36 */
-            custom_text36: string | null;
-            /** Custom Text37 */
-            custom_text37: string | null;
-            /** Custom Text38 */
-            custom_text38: string | null;
-            /** Custom Text39 */
-            custom_text39: string | null;
-            /** Custom Text40 */
-            custom_text40: string | null;
-            /** Custom Text Block1 */
-            custom_text_block1: string | null;
-            /** Custom Text Block2 */
-            custom_text_block2: string | null;
-            /** Custom Text Block3 */
-            custom_text_block3: string | null;
-            /** Custom Text Block4 */
-            custom_text_block4: string | null;
-            /** Custom Text Block5 */
-            custom_text_block5: string | null;
             /** Branch Id */
             branch_id: number | null;
             /** Client Contact Id */
@@ -679,10 +519,10 @@ export interface components {
             response_user_name: string | null;
             /** Published Category */
             published_category: string | null;
-            /** Category */
-            category: string | null;
-            /** Business Sector */
-            business_sector: string | null;
+            /** Categories */
+            categories: string[];
+            /** Business Sectors */
+            business_sectors: string[];
             /** Appointments Ids */
             appointments_ids: number[];
             /** Approved Placements Ids */
@@ -707,10 +547,10 @@ export interface components {
             sendouts_ids: number[];
             /** Shifts Ids */
             shifts_ids: number[];
-            /** Skills Ids */
-            skills_ids: number[];
-            /** Specialties Ids */
-            specialties_ids: number[];
+            /** Skills */
+            skills: string[];
+            /** Specialties */
+            specialties: string[];
             /** Submissions Ids */
             submissions_ids: number[];
             /** Tasks Ids */
@@ -953,7 +793,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobOrderSchema"][];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -1066,7 +908,9 @@ export interface operations {
     };
     sync_job_orders_job_orders__company_id__sync_post: {
         parameters: {
-            query?: never;
+            query?: {
+                count?: number;
+            };
             header?: never;
             path: {
                 company_id: string;

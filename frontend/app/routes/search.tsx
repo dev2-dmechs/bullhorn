@@ -21,12 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusDot } from "@/components/StatusDot";
-import { COMPANY_LABELS } from "@/lib/companies";
+import { COMPANY_LABELS, otherCompany } from "@/lib/companies";
 import { getStoredCompany, setStoredCompany } from "@/lib/storage";
-
-function otherCompany(companyId: string): string {
-  return companyId === "A" ? "B" : "A";
-}
 
 // Light background + dark text for every tier — reliable ~5-9:1 contrast regardless
 // of hue, unlike solid-color-plus-white-text which measured as low as ~1.76:1 on the
