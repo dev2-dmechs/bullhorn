@@ -40,6 +40,7 @@ async def _check_and_record(company_id: str, db: AsyncSession) -> tuple[list[Job
     # print("Events fetched from poling")
     # print(event_ids)
     # event_ids = []
+    print("_check_and_record: ")
     print(event_ids)
 
     if not event_ids:

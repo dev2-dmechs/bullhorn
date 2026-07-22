@@ -1,10 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type {
-  AnonymisedCandidate,
-  CandidateMatch,
-  JobOrderSchema,
-} from "@/api/client";
+import { Link } from "react-router";
+import type { AnonymisedCandidate, CandidateMatch } from "@/api/client";
 import {
   useBusinessSectors,
   useCandidateSearch,
@@ -24,12 +21,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { StatusDot } from "@/components/StatusDot";
+import { COMPANY_LABELS } from "@/lib/companies";
 import { getStoredCompany, setStoredCompany } from "@/lib/storage";
-
-const COMPANY_LABELS: Record<string, string> = {
-  A: "Company A",
-  B: "Company B",
-};
 
 function otherCompany(companyId: string): string {
   return companyId === "A" ? "B" : "A";
@@ -238,101 +231,27 @@ function VacancyPollingControls({
   return (
     <div className="flex items-center gap-2">
       <CheckVacanciesButton companyId={companyId} onResult={onResult} />
-      <NewVacanciesFeed companyId={companyId} />
+      <NewVacanciesLink companyId={companyId} />
     </div>
   );
 }
 
-function formatFieldValue(value: unknown): string {
-  if (value === null || value === undefined || value === "") return "—";
-  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
-  if (typeof value === "boolean") return value ? "Yes" : "No";
-  if (typeof value === "object") return JSON.stringify(value);
-  return String(value);
-}
-
-function JobFieldsTable({ job }: { job: JobOrderSchema }) {
-  const entries = Object.entries(job) as [string, unknown][];
-  return (
-    <div className="max-h-80 overflow-y-auto rounded border border-slate-100">
-      <table className="w-full text-left text-xs">
-        <tbody className="divide-y divide-slate-100">
-          {entries.map(([field, value]) => (
-            <tr key={field}>
-              <td className="whitespace-nowrap bg-slate-50 px-2 py-1 font-medium text-slate-500">
-                {field}
-              </td>
-              <td className="break-all px-2 py-1 text-slate-800">
-                {formatFieldValue(value)}
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-function NewVacanciesFeed({ companyId }: { companyId: string }) {
-  const [open, setOpen] = useState(false);
-  const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
+function NewVacanciesLink({ companyId }: { companyId: string }) {
   const { data } = useNewVacanciesFeed(companyId);
-  const jobs = data?.jobs ?? [];
+  const count = data?.jobs.length ?? 0;
 
   return (
-    <div className="relative">
-      <button
-        type="button"
-        onClick={() => setOpen((prev) => !prev)}
-        className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
-      >
-        New vacancies
-        {jobs.length > 0 && (
-          <Badge className="border-transparent bg-brand-teal text-white">
-            {jobs.length}
-          </Badge>
-        )}
-      </button>
-      {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 max-h-128 w-md overflow-y-auto rounded-lg bg-white p-2 shadow-xl">
-          {jobs.length === 0 ? (
-            <p className="px-3 py-4 text-sm text-slate-400">
-              No new vacancies detected yet
-            </p>
-          ) : (
-            <ul className="divide-y divide-slate-100">
-              {jobs.map((job) => (
-                <li key={job.id} className="px-3 py-2">
-                  <button
-                    type="button"
-                    onClick={() =>
-                      setExpandedJobId((prev) =>
-                        prev === job.id ? null : job.id,
-                      )
-                    }
-                    className="w-full text-left"
-                  >
-                    <p className="text-sm font-medium text-slate-800">
-                      {job.title ?? "—"}
-                    </p>
-                    <p className="text-xs text-slate-400">
-                      {job.date_added
-                        ? new Date(job.date_added).toLocaleString()
-                        : "date unknown"}
-                    </p>
-                  </button>
-                  {expandedJobId === job.id && (
-                    <div className="mt-2">
-                      <JobFieldsTable job={job} />
-                    </div>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
+    <Link
+      to={`/jobs/${companyId}`}
+      className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
+    >
+      Vacancies
+      {count > 0 && (
+        <Badge className="border-transparent bg-brand-teal text-white">
+          {count}
+        </Badge>
       )}
-    </div>
+    </Link>
   );
 }
 
