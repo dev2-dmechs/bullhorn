@@ -61,6 +61,8 @@ async def _check_and_record(company_id: str, db: AsyncSession) -> tuple[list[Job
 
     jobs = await client.list_job_orders_by_ids(unseen_ids)
 
+    await _store_job_orders(company_id, jobs, db)
+
     now = datetime.now(UTC)
     db.add_all(
         JobOrderSeen(company_id=company_id, bh_job_order_id=job["id"], first_seen_at=now)
