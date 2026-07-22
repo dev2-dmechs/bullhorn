@@ -299,6 +299,16 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
   A dict of field names is sufficient.
 - **Cap candidates fetched per match run at 50**, narrowed by a Bullhorn search query.
   Never fetch-then-score an unbounded candidate set.
+- **`/query/JobOrder`'s `count` param is silently capped by Bullhorn based on how many
+  to-many associations are in `fields`** — confirmed live 2026-07-23, undocumented:
+  requesting `count=100` with ~20 to-many associations in the field list actually returned
+  only 10 rows, no error. Roughly `floor(200 / num_to_many_associations)`. `JOB_ORDER_FIELDS`
+  in `live.py` only requests the four associations the app displays (`categories`,
+  `businessSectors`, `skills`, `specialties`) — cap is ~50 with those four, accepted
+  tradeoff. `MAX_JOB_ORDERS` (our own API's upper bound on the `count` query param) does
+  **not** reflect this — a caller can request `count=100` and still only get 50 back. If a
+  fifth to-many association is ever added back for job orders, expect the real ceiling to
+  drop further.
 
 ### Bullhorn auth
 - OAuth 2.0 password grant, per tenant. Credentials in `backend/.env` as `BH_A_*` / `BH_B_*`
