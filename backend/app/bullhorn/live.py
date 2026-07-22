@@ -16,6 +16,7 @@ PARSE_TIMEOUT = httpx.Timeout(60.0)
 MAX_AUTH_REDIRECTS = 5
 PING_PATH = "ping"
 MAX_CANDIDATES = 50
+MAX_JOB_ORDERS = 500
 CANDIDATE_SEARCH_FIELDS = (
     "id,categories,businessSectors,owner,status,occupation,"
     "fileAttachments(id,type,name,contentType)"

@@ -1,8 +1,8 @@
+import { useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import type { JobOrderSchema } from "@/api/client";
-import { useNewJobOrdersFeed } from "@/api/hooks";
-import { COMPANY_LABELS } from "@/lib/companies";
+import { useStoredJobOrders, useSyncJobOrders } from "@/api/hooks";
 
 function formatFieldValue(value: unknown): string {
   if (value === null || value === undefined || value === "") return "—";
@@ -71,11 +71,34 @@ function JobDetailModal({
   );
 }
 
+function SyncButton({ companyId }: { companyId: string }) {
+  const queryClient = useQueryClient();
+  const { mutateAsync, isPending } = useSyncJobOrders(companyId);
+
+  async function handleClick() {
+    await mutateAsync();
+    void queryClient.invalidateQueries({
+      queryKey: ["stored-job-orders", companyId],
+    });
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={isPending}
+      className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-60"
+    >
+      {isPending ? "Syncing…" : "Sync from Bullhorn"}
+    </button>
+  );
+}
+
 export default function Jobs() {
   const { companyId } = useParams<{ companyId: string }>();
   const [selected, setSelected] = useState<JobOrderSchema | null>(null);
-  const { data, isLoading } = useNewJobOrdersFeed(companyId ?? "");
-  const jobs = data?.jobs ?? [];
+  const { data, isLoading } = useStoredJobOrders(companyId ?? "");
+  const jobs = data ?? [];
 
   return (
     <div className="min-h-screen">
@@ -88,15 +111,9 @@ export default function Jobs() {
             >
               ← Back
             </Link>
-            <h1 className="text-base font-semibold text-white">
-              Job orders — {COMPANY_LABELS[companyId ?? ""] ?? companyId}
-            </h1>
+            <h1 className="text-base font-semibold text-white">Job orders</h1>
           </div>
-          {data?.last_checked_at && (
-            <span className="text-xs text-white/60">
-              Last checked {new Date(data.last_checked_at).toLocaleString()}
-            </span>
-          )}
+          <SyncButton companyId={companyId ?? ""} />
         </div>
       </header>
 
@@ -106,11 +123,11 @@ export default function Jobs() {
         ) : jobs.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
             <p className="text-sm font-medium text-brand-navy">
-              No job orders detected yet
+              No job orders stored yet
             </p>
             <p className="mt-1 text-sm text-slate-400">
-              The backend polls Bullhorn every 60s — check back shortly, or
-              trigger a manual check from the search page.
+              Click "Sync from Bullhorn" to fetch and store the latest job
+              orders for this tenant.
             </p>
           </div>
         ) : (

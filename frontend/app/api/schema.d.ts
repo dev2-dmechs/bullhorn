@@ -936,7 +936,9 @@ export interface operations {
     };
     list_latest_jobs_companies__company_id__jobs_get: {
         parameters: {
-            query?: never;
+            query?: {
+                count?: number;
+            };
             header?: never;
             path: {
                 company_id: string;

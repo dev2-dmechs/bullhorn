@@ -195,7 +195,10 @@ export default function Search() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <JobOrderPollingControls companyId={companyId} onResult={setToast} />
+            <JobOrderPollingControls
+              companyId={companyId}
+              onResult={setToast}
+            />
             <TenantBadge
               targetCompanyId={targetCompanyId}
               onSwitch={switchTargetCompany}
@@ -230,7 +233,7 @@ function JobOrderPollingControls({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <CheckJobOrdersButton companyId={companyId} onResult={onResult} />
+      {/* <CheckJobOrdersButton companyId={companyId} onResult={onResult} /> */}
       <NewJobOrdersLink companyId={companyId} />
     </div>
   );

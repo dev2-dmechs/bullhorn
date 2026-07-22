@@ -3,12 +3,12 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
+from app.bullhorn.live import MAX_JOB_ORDERS, BullhornAuthError, LiveBullhornClient
 from app.database import SessionLocal, get_db
 from app.models import JobOrder, JobOrderSeen
 from app.routers.companies import to_job_schema
@@ -140,12 +140,14 @@ async def get_new_job_orders(company_id: str) -> JobOrderFeedResponse:
 
 @router.post("/{company_id}/sync", response_model=JobOrderSyncResponse)
 async def sync_job_orders(
-    company_id: str, db: AsyncSession = Depends(get_db)
+    company_id: str,
+    count: int = Query(default=100, ge=1, le=MAX_JOB_ORDERS),
+    db: AsyncSession = Depends(get_db),
 ) -> JobOrderSyncResponse:
     company_id = _validate_company_id(company_id)
     client = LiveBullhornClient(company_id=company_id, db=db)
     try:
-        jobs_raw = await client.list_latest_jobs(count=100)
+        jobs_raw = await client.list_latest_jobs(count=count)
     except BullhornAuthError as exc:
         raise HTTPException(status_code=502, detail="Bullhorn job order fetch failed") from exc
 

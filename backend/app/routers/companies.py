@@ -2,11 +2,11 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
+from app.bullhorn.live import MAX_JOB_ORDERS, BullhornAuthError, LiveBullhornClient
 from app.config import get_settings
 from app.database import get_db
 from app.models import BusinessSector, Category, Company, Skill
@@ -152,13 +152,15 @@ async def list_countries(
 
 @router.get("/{company_id}/jobs", response_model=list[JobOrderSchema])
 async def list_latest_jobs(
-    company_id: str, db: AsyncSession = Depends(get_db)
+    company_id: str,
+    count: int = Query(default=100, ge=1, le=MAX_JOB_ORDERS),
+    db: AsyncSession = Depends(get_db),
 ) -> list[JobOrderSchema]:
     company = await _company(company_id, db)
 
     client = LiveBullhornClient(company_id=company.id, db=db)
     try:
-        jobs = await client.list_latest_jobs(count=100)
+        jobs = await client.list_latest_jobs(count=count)
     except BullhornAuthError as exc:
         raise HTTPException(status_code=502, detail="Bullhorn job order lookup failed") from exc
 
