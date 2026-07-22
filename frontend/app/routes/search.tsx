@@ -198,8 +198,7 @@ export default function Search() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <NewVacanciesFeed />
-            <CheckNewVacanciesButton onResult={setToast} />
+            <VacancyPollingControls companyId={companyId} onResult={setToast} />
             <TenantBadge
               targetCompanyId={targetCompanyId}
               onSwitch={switchTargetCompany}
@@ -225,9 +224,24 @@ function Toast({ message }: { message: string }) {
   );
 }
 
-function NewVacanciesFeed() {
+function VacancyPollingControls({
+  companyId,
+  onResult,
+}: {
+  companyId: string;
+  onResult: (message: string) => void;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <CheckVacanciesButton companyId={companyId} onResult={onResult} />
+      <NewVacanciesFeed companyId={companyId} />
+    </div>
+  );
+}
+
+function NewVacanciesFeed({ companyId }: { companyId: string }) {
   const [open, setOpen] = useState(false);
-  const { data } = useNewVacanciesFeed();
+  const { data } = useNewVacanciesFeed(companyId);
   const jobs = data?.jobs ?? [];
 
   return (
@@ -270,27 +284,29 @@ function NewVacanciesFeed() {
   );
 }
 
-function CheckNewVacanciesButton({
+function CheckVacanciesButton({
+  companyId,
   onResult,
 }: {
+  companyId: string;
   onResult: (message: string) => void;
 }) {
-  const { mutate, isPending } = useCheckNewVacancies();
   const queryClient = useQueryClient();
+  const { mutateAsync, isPending } = useCheckNewVacancies(companyId);
 
-  function handleClick() {
-    mutate(undefined, {
-      onSuccess: (result) => {
-        void queryClient.invalidateQueries({ queryKey: ["new-vacancies"] });
-        const count = result.new_jobs.length;
-        onResult(
-          count === 0
-            ? "No new vacancies since last check"
-            : `${count} new vacanc${count === 1 ? "y" : "ies"} found (Company A)`,
-        );
-      },
-      onError: () => onResult("Vacancy check failed"),
-    });
+  async function handleClick() {
+    try {
+      const result = await mutateAsync();
+      void queryClient.invalidateQueries({ queryKey: ["new-vacancies", companyId] });
+      const count = result.new_jobs.length;
+      onResult(
+        count === 0
+          ? "No new vacancies since last check"
+          : `${count} new vacanc${count === 1 ? "y" : "ies"} found`,
+      );
+    } catch {
+      onResult("Vacancy check failed");
+    }
   }
 
   return (

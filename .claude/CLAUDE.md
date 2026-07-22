@@ -116,8 +116,17 @@ wrong.
   only ever says "the other company"; it never fixes which. An earlier version of this file
   forbade a tenant selector. That was our narrowing, not the client's requirement, and it
   was wrong.
-- **The one direction that IS fixed: the simulated auto-match takes its vacancies from
-  Company A.** The scoping doc (§1) names Company A explicitly, and only there.
+- **Vacancy polling covers both tenants** (reversed 2026-07-22, explicit request). The
+  scoping doc (§1) names Company A explicitly for the simulated auto-match, and the original
+  build here started Company-A-only for that reason — but the user asked to extend detection
+  to both tenants, so the poller, `vacancies_seen`, and the feed endpoints are now
+  per-company (`{company_id}` path param), not hardcoded to `A`. Each tenant gets its own
+  independent feed — not merged into one list.
+  **UI scoping (2026-07-22):** the header shows only the *logged-in* company's vacancy
+  feed/check button, not both at once — matches the existing "logged in as X, searching Y"
+  pattern already used for candidate search. Both `/vacancies/{id}/...` endpoints still
+  exist and both tenants are still polled by the backend regardless of who's logged in;
+  only the UI's default view is scoped to one tenant at a time.
 - **Redaction is symmetric.** Because either tenant can be the candidate pool, the redaction
   at the display boundary applies to *any* candidate from *either* tenant — never written as
   "hide Company B's candidates" specifically. (Redaction happens at display; the internal
@@ -125,12 +134,39 @@ wrong.
 - A **match run** = role requirements + a chosen tenant in → ranked, scored candidates from
   that tenant out. One flow, two triggers:
   - **Manual search**: recruiter picks the tenant to search and enters role requirements.
-  - **Simulated auto-match**: a "check for new vacancies" action polls **Company A's**
-    Bullhorn, finds unseen vacancies, and runs the same matching against the other tenant.
-    Only the trigger differs.
+  - **Simulated auto-match**: a "check for new vacancies" action polls Bullhorn, finds
+    unseen vacancies, and runs the same matching against the other tenant. Only the
+    trigger differs.
     **As of 2026-07-21, only the detection half is in scope**: poll `JobOrder` by
     `dateAdded`, diff against `vacancies_seen`, report which ones are new. Do not wire up
     "runs the same matching" until the AI matching phase is separately greenlit.
+    **As of 2026-07-22, detection covers both Company A and Company B** (originally
+    Company-A-only per the scoping doc's fixed direction for this trigger — reversed at
+    the user's explicit request). Each tenant is polled and reported independently.
+    **Detection mechanism, reversed 2026-07-22 (explicit request):** originally a full
+    `JobOrder` id scan (`/query/JobOrder`, paginated) diffed against `vacancies_seen`.
+    Switched to Bullhorn's own Entity Events subscription API
+    (https://bullhorn.github.io/REST-API-Event-Subscriptions/) instead — poll
+    `GET /event/subscription/{id}` for `INSERTED` `JobOrder` events, one subscription
+    per tenant. **`PUT` is create-once, not an idempotent upsert as the docs implied**
+    — a repeat `PUT` 400s with `"already exists"`, which `ensure_job_order_subscription`
+    treats as success rather than an error (discovered by testing against the live
+    tenant, not documented). Regular `GET`-based draining is what actually keeps a
+    subscription alive; `PUT` is only belt-and-braces recreation if one lapses. See
+    rule 3's sanctioned exception above. Known, accepted tradeoffs of this model
+    (confirmed against the docs, saved to memory as `bullhorn-entity-events-limitations`):
+      - No history before the subscription was created — a fresh subscription reports
+        nothing retroactively. (The old full-scan approach didn't have this gap; this is
+        a deliberate tradeoff, not an oversight.)
+      - Draining the queue (`GET`) consumes those events — a crash between draining and
+        finishing `vacancies_seen` inserts loses that batch. `vacancies_seen` is still
+        checked defensively per drained id as a second dedup layer, but it cannot recover
+        events that were never drained.
+      - Subscriptions silently expire if not polled often enough — mitigated by the
+        60s poll interval itself; `ensure_job_order_subscription`'s create-if-missing
+        behavior recovers automatically if a subscription does lapse.
+      - Events carry no field-level detail — every `INSERTED` id still needs a full
+        `JobOrder` fetch (`list_job_orders_by_ids`) to get displayable fields.
     **Reversed the same day (explicit request):** this is now backed by a real backend
     poller — an in-process `asyncio` task started in FastAPI's `lifespan`, sleeping and
     re-polling on a fixed interval, independent of anyone viewing the page. This is a
@@ -138,9 +174,10 @@ wrong.
     inside the spirit of the original rule: no webhooks (Bullhorn never pushes to us),
     no external scheduling infra (no APScheduler, no cron, no separate process/container —
     `CLAUDE.md`'s "no Docker/CI/infra tooling" rule still holds). One `asyncio.create_task`
-    loop, cancelled on shutdown. Found vacancies accumulate in an in-memory list on the
-    backend (not persisted beyond `vacancies_seen`'s IDs) and the frontend polls a GET
-    endpoint to render them — this is still fetch-based polling end to end, not push.
+    loop, cancelled on shutdown, polling both tenants each cycle. Found vacancies
+    accumulate in an in-memory, per-company feed on the backend (not persisted beyond
+    `vacancies_seen`'s IDs) and the frontend polls a GET endpoint per company to render
+    them — this is still fetch-based polling end to end, not push.
 
 ### Role requirements — one shape for both triggers
 This is the input to both flows, the payload stored on `match_runs`, and what the prompt
@@ -212,6 +249,12 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
 
 3. **READ-ONLY.** The Bullhorn integration issues GET requests only. Never POST, PUT,
    PATCH or DELETE against any Bullhorn API. These are live client production systems.
+   **Two narrow, explicitly-approved exceptions exist, both scoped to one call each —
+   see their own docstrings, and do not extend either without the same kind of explicit
+   go-ahead:**
+   - `POST /resume/parseToCandidate` (résumé parsing, parse-only, mutates nothing)
+   - `PUT /event/subscription/{id}` (vacancy-poller subscription create/keep-alive,
+     approved 2026-07-22 — see "Vacancy detection" below)
 
 4. **NO SECRETS OR PII IN LOGS.** Log candidate external IDs, never candidate content.
    Never log tokens or credentials.

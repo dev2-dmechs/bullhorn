@@ -16,89 +16,101 @@ log = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/vacancies", tags=["vacancies"])
 
-POLL_COMPANY_ID = "A"
+POLL_COMPANY_IDS = ("A", "B")
 POLL_INTERVAL_SECONDS = 60
 MAX_FEED_SIZE = 500
 
-_feed: list[JobOrderSchema] = []
-_last_checked_at: datetime | None = None
+
+_feeds: dict[str, list[JobOrderSchema]] = {cid: [] for cid in POLL_COMPANY_IDS}
+_last_checked_at: dict[str, datetime | None] = {cid: None for cid in POLL_COMPANY_IDS}
 
 
-async def _check_and_record(db: AsyncSession) -> tuple[list[JobOrderSchema], int]:
-    """Scan every JobOrder id in the tenant (not just the most recent N), diff the full
-    set against vacancies_seen, and record whichever ones are unseen."""
-    client = LiveBullhornClient(company_id=POLL_COMPANY_ID, db=db)
-    all_ids = await client.list_all_job_order_ids()
+def _validate_company_id(company_id: str) -> str:
+    company_id = company_id.upper()
+    if company_id not in POLL_COMPANY_IDS:
+        raise HTTPException(status_code=404, detail="Company not found")
+    return company_id
+
+
+async def _check_and_record(company_id: str, db: AsyncSession) -> tuple[list[JobOrderSchema], int]:
+    client = LiveBullhornClient(company_id=company_id, db=db)
+    await client.ensure_job_order_subscription()
+    event_ids = await client.poll_job_order_events()
+
+    if not event_ids:
+        return [], 0
 
     seen = await db.scalars(
-        select(VacancySeen.bh_job_order_id).where(VacancySeen.company_id == POLL_COMPANY_ID)
+        select(VacancySeen.bh_job_order_id).where(
+            VacancySeen.company_id == company_id,
+            VacancySeen.bh_job_order_id.in_(event_ids),
+        )
     )
     seen_ids = set(seen.all())
-    unseen_ids = [i for i in all_ids if i not in seen_ids]
+    unseen_ids = [i for i in event_ids if i not in seen_ids]
 
     jobs = await client.list_job_orders_by_ids(unseen_ids)
 
     now = datetime.now(UTC)
     db.add_all(
-        VacancySeen(company_id=POLL_COMPANY_ID, bh_job_order_id=job["id"], first_seen_at=now)
+        VacancySeen(company_id=company_id, bh_job_order_id=job["id"], first_seen_at=now)
         for job in jobs
     )
     await db.commit()
 
     log.info(
-        "Company %s: vacancy poll scanned %d job orders, %d unseen",
-        POLL_COMPANY_ID,
-        len(all_ids),
+        "Company %s: event poll drained %d INSERTED events, %d unseen",
+        company_id,
+        len(event_ids),
         len(jobs),
     )
-    return [to_job_schema(job) for job in jobs], len(all_ids)
+    return [to_job_schema(job) for job in jobs], len(event_ids)
 
 
-def _record_in_feed(new_jobs: list[JobOrderSchema]) -> None:
+def _record_in_feed(company_id: str, new_jobs: list[JobOrderSchema]) -> None:
     if not new_jobs:
         return
-    _feed.extend(new_jobs)
-    del _feed[:-MAX_FEED_SIZE]
+    feed = _feeds[company_id]
+    feed.extend(new_jobs)
+    del feed[:-MAX_FEED_SIZE]
 
 
-@router.post("/check-new", response_model=NewVacancyCheckResponse)
-async def check_new_vacancies(db: AsyncSession = Depends(get_db)) -> NewVacancyCheckResponse:
-    """On-demand poll — same detection logic the background poller runs on its own
-    interval. Also feeds the accumulating feed served by GET /vacancies/new."""
-    global _last_checked_at
+@router.post("/{company_id}/check-new", response_model=NewVacancyCheckResponse)
+async def check_new_vacancies(
+    company_id: str, db: AsyncSession = Depends(get_db)
+) -> NewVacancyCheckResponse:
+    company_id = _validate_company_id(company_id)
     try:
-        new_jobs, checked_count = await _check_and_record(db)
+        new_jobs, checked_count = await _check_and_record(company_id, db)
     except BullhornAuthError as exc:
-        log.warning("Company %s: vacancy poll failed", POLL_COMPANY_ID)
+        log.warning("Company %s: vacancy poll failed", company_id)
         raise HTTPException(status_code=502, detail="Bullhorn vacancy poll failed") from exc
 
-    _record_in_feed(new_jobs)
-    _last_checked_at = datetime.now(UTC)
+    _record_in_feed(company_id, new_jobs)
+    _last_checked_at[company_id] = datetime.now(UTC)
     return NewVacancyCheckResponse(
-        company_id=POLL_COMPANY_ID, new_jobs=new_jobs, checked_count=checked_count
+        company_id=company_id, new_jobs=new_jobs, checked_count=checked_count
     )
 
 
-@router.get("/new", response_model=VacancyFeedResponse)
-async def get_new_vacancies() -> VacancyFeedResponse:
-    """The accumulating feed the frontend polls to render a running list — populated by
-    the background poller and by manual /check-new calls."""
+@router.get("/{company_id}/new", response_model=VacancyFeedResponse)
+async def get_new_vacancies(company_id: str) -> VacancyFeedResponse:
+    company_id = _validate_company_id(company_id)
     return VacancyFeedResponse(
-        company_id=POLL_COMPANY_ID, jobs=list(_feed), last_checked_at=_last_checked_at
+        company_id=company_id,
+        jobs=list(_feeds[company_id]),
+        last_checked_at=_last_checked_at[company_id],
     )
 
 
 async def poll_loop() -> None:
-    """Background task started from FastAPI's lifespan: re-polls Company A on a fixed
-    interval, independent of anyone viewing the page. Deliberate, explicit exception to
-    the project's usual "no schedulers" rule — see CLAUDE.md, Domain section."""
-    global _last_checked_at
     while True:
-        try:
-            async with SessionLocal() as db:
-                new_jobs, _ = await _check_and_record(db)
-            _record_in_feed(new_jobs)
-            _last_checked_at = datetime.now(UTC)
-        except BullhornAuthError:
-            log.warning("Company %s: background vacancy poll failed", POLL_COMPANY_ID)
+        for company_id in POLL_COMPANY_IDS:
+            try:
+                async with SessionLocal() as db:
+                    new_jobs, _ = await _check_and_record(company_id, db)
+                _record_in_feed(company_id, new_jobs)
+                _last_checked_at[company_id] = datetime.now(UTC)
+            except BullhornAuthError:
+                log.warning("Company %s: background vacancy poll failed", company_id)
         await asyncio.sleep(POLL_INTERVAL_SECONDS)

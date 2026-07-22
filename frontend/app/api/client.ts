@@ -54,10 +54,12 @@ export function searchCandidates(companyId: string, body: CandidateSearchRequest
   });
 }
 
-export function checkNewVacancies() {
-  return request<NewVacancyCheckResponse>("/vacancies/check-new", { method: "POST" });
+export function checkNewVacancies(companyId: string) {
+  return request<NewVacancyCheckResponse>(`/vacancies/${companyId}/check-new`, {
+    method: "POST",
+  });
 }
 
-export function getNewVacancies() {
-  return request<VacancyFeedResponse>("/vacancies/new");
+export function getNewVacancies(companyId: string) {
+  return request<VacancyFeedResponse>(`/vacancies/${companyId}/new`);
 }

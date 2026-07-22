@@ -174,8 +174,10 @@ class MatchScoreBatchResult(BaseModel):
 
 
 class NewVacancyCheckResponse(BaseModel):
-    """Result of one on-demand "check for new vacancies" poll against Company A.
-    Detection only — these jobs are not matched/scored against candidates yet."""
+    """Result of one on-demand "check for new vacancies" poll against one tenant.
+    Detection only — these jobs are not matched/scored against candidates yet.
+    `checked_count` is the number of INSERTED JobOrder events drained from Bullhorn's
+    Entity Events subscription this call, not a tenant-wide total."""
 
     company_id: str
     new_jobs: list[JobOrderSchema]
@@ -183,8 +185,8 @@ class NewVacancyCheckResponse(BaseModel):
 
 
 class VacancyFeedResponse(BaseModel):
-    """The accumulating feed of newly-detected Company A vacancies, populated by the
-    background poller. In-memory only — see app/routers/vacancies.py."""
+    """The accumulating feed of newly-detected vacancies for one tenant, populated by
+    the background poller. In-memory only — see app/routers/vacancies.py."""
 
     company_id: str
     jobs: list[JobOrderSchema]

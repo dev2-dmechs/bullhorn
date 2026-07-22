@@ -57,16 +57,16 @@ export function useCandidateSearch(companyId: string) {
   });
 }
 
-export function useCheckNewVacancies() {
+export function useCheckNewVacancies(companyId: string) {
   return useMutation({
-    mutationFn: checkNewVacancies,
+    mutationFn: () => checkNewVacancies(companyId),
   });
 }
 
-export function useNewVacanciesFeed() {
+export function useNewVacanciesFeed(companyId: string) {
   return useQuery({
-    queryKey: ["new-vacancies"],
-    queryFn: getNewVacancies,
+    queryKey: ["new-vacancies", companyId],
+    queryFn: () => getNewVacancies(companyId),
     refetchInterval: VACANCY_FEED_REFETCH_MS,
   });
 }

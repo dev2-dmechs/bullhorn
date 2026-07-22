@@ -116,9 +116,7 @@ async def search_candidates(
                 for c in candidates
             ],
         )
-    except Exception as exc:  # OpenAI SDK errors, bad output shape, network failures
-        # exc's message describes the API/schema failure (status code, error type) — it
-        # does not echo request content, so this is safe to log in full (rule 4).
+    except Exception as exc:
         log.warning(
             "Company %s: AI match scoring failed during candidate search: %s", company.id, exc
         )
