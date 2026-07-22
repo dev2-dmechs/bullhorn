@@ -123,7 +123,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/vacancies/check-new": {
+    "/vacancies/{company_id}/check-new": {
         parameters: {
             query?: never;
             header?: never;
@@ -132,31 +132,23 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /**
-         * Check New Vacancies
-         * @description On-demand poll — same detection logic the background poller runs on its own
-         *     interval. Also feeds the accumulating feed served by GET /vacancies/new.
-         */
-        post: operations["check_new_vacancies_vacancies_check_new_post"];
+        /** Check New Vacancies */
+        post: operations["check_new_vacancies_vacancies__company_id__check_new_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/vacancies/new": {
+    "/vacancies/{company_id}/new": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get New Vacancies
-         * @description The accumulating feed the frontend polls to render a running list — populated by
-         *     the background poller and by manual /check-new calls.
-         */
-        get: operations["get_new_vacancies_vacancies_new_get"];
+        /** Get New Vacancies */
+        get: operations["get_new_vacancies_vacancies__company_id__new_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -337,62 +329,366 @@ export interface components {
         JobOrderSchema: {
             /** Id */
             id: number;
-            /** Title */
-            title: string;
-            /** Status */
-            status: string | null;
+            address: components["schemas"]["AddressSchema"] | null;
+            /** Benefits */
+            benefits: string | null;
+            /** Bill Rate Category Id */
+            bill_rate_category_id: number | null;
+            /** Bonus Package */
+            bonus_package: string | null;
+            /** Branch Code */
+            branch_code: string | null;
+            /** Certification List */
+            certification_list: string | null;
+            /** Client Bill Rate */
+            client_bill_rate: number | null;
+            /** Cost Center */
+            cost_center: string | null;
+            /** Degree List */
+            degree_list: string | null;
+            /** Description */
+            description: string | null;
+            /** Duration Weeks */
+            duration_weeks: number | null;
+            /** Education Degree */
+            education_degree: string | null;
             /** Employment Type */
             employment_type: string | null;
+            /** Estimated End Date */
+            estimated_end_date: string | null;
+            /** External Category Id */
+            external_category_id: number | null;
+            /** External Id */
+            external_id: string | null;
+            /** Fee Arrangement */
+            fee_arrangement: number | null;
+            /** Hours Of Operation */
+            hours_of_operation: string | null;
+            /** Hours Per Week */
+            hours_per_week: number | null;
+            /** Is Client Editable */
+            is_client_editable: boolean | null;
+            /** Is Deleted */
+            is_deleted: boolean | null;
+            /** Is Interview Required */
+            is_interview_required: boolean | null;
+            /** Is Jobcast Published */
+            is_jobcast_published: boolean | null;
             /** Is Open */
             is_open: boolean | null;
             /** Is Public */
             is_public: number | null;
-            /** Date Added */
-            date_added: string | null;
-            /** Date End */
-            date_end: string | null;
-            /** Date Last Published */
-            date_last_published: string | null;
-            /** Start Date */
-            start_date: string | null;
-            address: components["schemas"]["AddressSchema"] | null;
-            /** Benefits */
-            benefits: string | null;
-            /** Bonus Package */
-            bonus_package: string | null;
+            /** Is Work From Home */
+            is_work_from_home: boolean | null;
+            /** Job Board List */
+            job_board_list: string | null;
+            /** Job Order Rate Card Id */
+            job_order_rate_card_id: number | null;
+            /** Job Posting Url */
+            job_posting_url: string | null;
+            /** Mark Up Percentage */
+            mark_up_percentage: number | null;
+            /** Num Openings */
+            num_openings: number | null;
+            /** On Site */
+            on_site: string | null;
             /** Pay Rate */
             pay_rate: number | null;
-            /** Salary */
-            salary: number | null;
-            /** Salary Unit */
-            salary_unit: string | null;
             /** Public Description */
             public_description: string | null;
             /** Published Zip */
             published_zip: string | null;
+            /** Reason Closed */
+            reason_closed: string | null;
+            /** Report To */
+            report_to: string | null;
+            /** Salary */
+            salary: number | null;
+            /** Salary Unit */
+            salary_unit: string | null;
+            /** Screener Questions Status */
+            screener_questions_status: number | null;
+            /** Skill List */
+            skill_list: string | null;
+            /** Source */
+            source: string | null;
+            /** Status */
+            status: string | null;
+            /** Tax Rate */
+            tax_rate: number | null;
+            /** Tax Status */
+            tax_status: string | null;
+            /** Title */
+            title: string | null;
             /** Travel Requirements */
             travel_requirements: string | null;
+            /** Type */
+            type: number | null;
             /** Will Relocate */
             will_relocate: boolean | null;
+            /** Will Relocate Int */
+            will_relocate_int: number | null;
             /** Will Sponsor */
             will_sponsor: boolean | null;
             /** Years Required */
             years_required: number | null;
+            /** Date Added */
+            date_added: string | null;
+            /** Date Closed */
+            date_closed: string | null;
+            /** Date End */
+            date_end: string | null;
+            /** Date Last Exported */
+            date_last_exported: string | null;
+            /** Date Last Modified */
+            date_last_modified: string | null;
+            /** Date Last Published */
+            date_last_published: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** Time And Labor Enabled Date */
+            time_and_labor_enabled_date: string | null;
+            /** Correlated Custom Date1 */
+            correlated_custom_date1: string | null;
+            /** Correlated Custom Date2 */
+            correlated_custom_date2: string | null;
+            /** Correlated Custom Date3 */
+            correlated_custom_date3: string | null;
+            /** Correlated Custom Float1 */
+            correlated_custom_float1: number | null;
+            /** Correlated Custom Float2 */
+            correlated_custom_float2: number | null;
+            /** Correlated Custom Float3 */
+            correlated_custom_float3: number | null;
+            /** Correlated Custom Int1 */
+            correlated_custom_int1: number | null;
+            /** Correlated Custom Int2 */
+            correlated_custom_int2: number | null;
+            /** Correlated Custom Int3 */
+            correlated_custom_int3: number | null;
+            /** Correlated Custom Text1 */
+            correlated_custom_text1: string | null;
+            /** Correlated Custom Text2 */
+            correlated_custom_text2: string | null;
+            /** Correlated Custom Text3 */
+            correlated_custom_text3: string | null;
+            /** Correlated Custom Text4 */
+            correlated_custom_text4: string | null;
+            /** Correlated Custom Text5 */
+            correlated_custom_text5: string | null;
+            /** Correlated Custom Text6 */
+            correlated_custom_text6: string | null;
+            /** Correlated Custom Text7 */
+            correlated_custom_text7: string | null;
+            /** Correlated Custom Text8 */
+            correlated_custom_text8: string | null;
+            /** Correlated Custom Text9 */
+            correlated_custom_text9: string | null;
+            /** Correlated Custom Text10 */
+            correlated_custom_text10: string | null;
+            /** Correlated Custom Text Block1 */
+            correlated_custom_text_block1: string | null;
+            /** Correlated Custom Text Block2 */
+            correlated_custom_text_block2: string | null;
+            /** Correlated Custom Text Block3 */
+            correlated_custom_text_block3: string | null;
+            /** Custom Date1 */
+            custom_date1: string | null;
+            /** Custom Date2 */
+            custom_date2: string | null;
+            /** Custom Date3 */
+            custom_date3: string | null;
+            /** Custom Float1 */
+            custom_float1: number | null;
+            /** Custom Float2 */
+            custom_float2: number | null;
+            /** Custom Float3 */
+            custom_float3: number | null;
+            /** Custom Int1 */
+            custom_int1: number | null;
+            /** Custom Int2 */
+            custom_int2: number | null;
+            /** Custom Int3 */
+            custom_int3: number | null;
+            /** Custom Int4 */
+            custom_int4: number | null;
+            /** Custom Int5 */
+            custom_int5: number | null;
+            /** Custom Int6 */
+            custom_int6: number | null;
+            /** Custom Int7 */
+            custom_int7: number | null;
+            /** Custom Int8 */
+            custom_int8: number | null;
+            /** Custom Text1 */
+            custom_text1: string | null;
+            /** Custom Text2 */
+            custom_text2: string | null;
+            /** Custom Text3 */
+            custom_text3: string | null;
+            /** Custom Text4 */
+            custom_text4: string | null;
+            /** Custom Text5 */
+            custom_text5: string | null;
+            /** Custom Text6 */
+            custom_text6: string | null;
+            /** Custom Text7 */
+            custom_text7: string | null;
+            /** Custom Text8 */
+            custom_text8: string | null;
+            /** Custom Text9 */
+            custom_text9: string | null;
+            /** Custom Text10 */
+            custom_text10: string | null;
+            /** Custom Text11 */
+            custom_text11: string | null;
+            /** Custom Text12 */
+            custom_text12: string | null;
+            /** Custom Text13 */
+            custom_text13: string | null;
+            /** Custom Text14 */
+            custom_text14: string | null;
+            /** Custom Text15 */
+            custom_text15: string | null;
+            /** Custom Text16 */
+            custom_text16: string | null;
+            /** Custom Text17 */
+            custom_text17: string | null;
+            /** Custom Text18 */
+            custom_text18: string | null;
+            /** Custom Text19 */
+            custom_text19: string | null;
+            /** Custom Text20 */
+            custom_text20: string | null;
+            /** Custom Text21 */
+            custom_text21: string | null;
+            /** Custom Text22 */
+            custom_text22: string | null;
+            /** Custom Text23 */
+            custom_text23: string | null;
+            /** Custom Text24 */
+            custom_text24: string | null;
+            /** Custom Text25 */
+            custom_text25: string | null;
+            /** Custom Text26 */
+            custom_text26: string | null;
+            /** Custom Text27 */
+            custom_text27: string | null;
+            /** Custom Text28 */
+            custom_text28: string | null;
+            /** Custom Text29 */
+            custom_text29: string | null;
+            /** Custom Text30 */
+            custom_text30: string | null;
+            /** Custom Text31 */
+            custom_text31: string | null;
+            /** Custom Text32 */
+            custom_text32: string | null;
+            /** Custom Text33 */
+            custom_text33: string | null;
+            /** Custom Text34 */
+            custom_text34: string | null;
+            /** Custom Text35 */
+            custom_text35: string | null;
+            /** Custom Text36 */
+            custom_text36: string | null;
+            /** Custom Text37 */
+            custom_text37: string | null;
+            /** Custom Text38 */
+            custom_text38: string | null;
+            /** Custom Text39 */
+            custom_text39: string | null;
+            /** Custom Text40 */
+            custom_text40: string | null;
+            /** Custom Text Block1 */
+            custom_text_block1: string | null;
+            /** Custom Text Block2 */
+            custom_text_block2: string | null;
+            /** Custom Text Block3 */
+            custom_text_block3: string | null;
+            /** Custom Text Block4 */
+            custom_text_block4: string | null;
+            /** Custom Text Block5 */
+            custom_text_block5: string | null;
+            /** Billing Profile Id */
+            billing_profile_id: number | null;
+            /** Branch Id */
+            branch_id: number | null;
+            /** Client Contact Id */
+            client_contact_id: number | null;
+            /** Client Corporation Id */
+            client_corporation_id: number | null;
+            /** Client Corporation Line Id */
+            client_corporation_line_id: number | null;
+            /** Job Code Id */
+            job_code_id: number | null;
+            /** Location Id */
+            location_id: number | null;
+            /** Opportunity Id */
+            opportunity_id: number | null;
+            /** Report To Client Contact Id */
+            report_to_client_contact_id: number | null;
+            /** Shift Id */
+            shift_id: number | null;
+            /** Workers Comp Rate Id */
+            workers_comp_rate_id: number | null;
+            /** Owner Name */
+            owner_name: string | null;
+            /** Response User Name */
+            response_user_name: string | null;
+            /** Published Category */
+            published_category: string | null;
             /** Category */
             category: string | null;
             /** Business Sector */
             business_sector: string | null;
-            /** Owner Name */
-            owner_name: string | null;
-            /** Published Category */
-            published_category: string | null;
-            /** Response User Name */
-            response_user_name: string | null;
+            /** Appointments Ids */
+            appointments_ids: number[];
+            /** Approved Placements Ids */
+            approved_placements_ids: number[];
+            /** Assigned Users Ids */
+            assigned_users_ids: number[];
+            /** Certification Groups Ids */
+            certification_groups_ids: number[];
+            /** Certifications Ids */
+            certifications_ids: number[];
+            /** File Attachments Ids */
+            file_attachments_ids: number[];
+            /** Interviews Ids */
+            interviews_ids: number[];
+            /** Job Order Integrations Ids */
+            job_order_integrations_ids: number[];
+            /** Job Order Screener Questions Ids */
+            job_order_screener_questions_ids: number[];
+            /** Job Shifts Ids */
+            job_shifts_ids: number[];
+            /** Notes Ids */
+            notes_ids: number[];
+            /** Placements Ids */
+            placements_ids: number[];
+            /** Sendouts Ids */
+            sendouts_ids: number[];
+            /** Shifts Ids */
+            shifts_ids: number[];
+            /** Skills Ids */
+            skills_ids: number[];
+            /** Specialties Ids */
+            specialties_ids: number[];
+            /** Submissions Ids */
+            submissions_ids: number[];
+            /** Tasks Ids */
+            tasks_ids: number[];
+            /** Time Units Ids */
+            time_units_ids: number[];
+            /** Web Responses Ids */
+            web_responses_ids: number[];
         };
         /**
          * NewVacancyCheckResponse
-         * @description Result of one on-demand "check for new vacancies" poll against Company A.
+         * @description Result of one on-demand "check for new vacancies" poll against one tenant.
          *     Detection only — these jobs are not matched/scored against candidates yet.
+         *     `checked_count` is the number of INSERTED JobOrder events drained from Bullhorn's
+         *     Entity Events subscription this call, not a tenant-wide total.
          */
         NewVacancyCheckResponse: {
             /** Company Id */
@@ -411,8 +707,8 @@ export interface components {
         };
         /**
          * VacancyFeedResponse
-         * @description The accumulating feed of newly-detected Company A vacancies, populated by the
-         *     background poller. In-memory only — see app/routers/vacancies.py.
+         * @description The accumulating feed of newly-detected vacancies for one tenant, populated by
+         *     the background poller. In-memory only — see app/routers/vacancies.py.
          */
         VacancyFeedResponse: {
             /** Company Id */
@@ -671,11 +967,13 @@ export interface operations {
             };
         };
     };
-    check_new_vacancies_vacancies_check_new_post: {
+    check_new_vacancies_vacancies__company_id__check_new_post: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                company_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -689,13 +987,24 @@ export interface operations {
                     "application/json": components["schemas"]["NewVacancyCheckResponse"];
                 };
             };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
         };
     };
-    get_new_vacancies_vacancies_new_get: {
+    get_new_vacancies_vacancies__company_id__new_get: {
         parameters: {
             query?: never;
             header?: never;
-            path?: never;
+            path: {
+                company_id: string;
+            };
             cookie?: never;
         };
         requestBody?: never;
@@ -707,6 +1016,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["VacancyFeedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

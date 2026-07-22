@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
-import type { AnonymisedCandidate, CandidateMatch } from "@/api/client";
+import type { AnonymisedCandidate, CandidateMatch, JobOrderSchema } from "@/api/client";
 import {
   useBusinessSectors,
   useCandidateSearch,
@@ -239,8 +239,37 @@ function VacancyPollingControls({
   );
 }
 
+function formatFieldValue(value: unknown): string {
+  if (value === null || value === undefined || value === "") return "—";
+  if (Array.isArray(value)) return value.length ? value.join(", ") : "—";
+  if (typeof value === "boolean") return value ? "Yes" : "No";
+  if (typeof value === "object") return JSON.stringify(value);
+  return String(value);
+}
+
+function JobFieldsTable({ job }: { job: JobOrderSchema }) {
+  const entries = Object.entries(job) as [string, unknown][];
+  return (
+    <div className="max-h-80 overflow-y-auto rounded border border-slate-100">
+      <table className="w-full text-left text-xs">
+        <tbody className="divide-y divide-slate-100">
+          {entries.map(([field, value]) => (
+            <tr key={field}>
+              <td className="whitespace-nowrap bg-slate-50 px-2 py-1 font-medium text-slate-500">
+                {field}
+              </td>
+              <td className="break-all px-2 py-1 text-slate-800">{formatFieldValue(value)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
 function NewVacanciesFeed({ companyId }: { companyId: string }) {
   const [open, setOpen] = useState(false);
+  const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
   const { data } = useNewVacanciesFeed(companyId);
   const jobs = data?.jobs ?? [];
 
@@ -259,7 +288,7 @@ function NewVacanciesFeed({ companyId }: { companyId: string }) {
         )}
       </button>
       {open && (
-        <div className="absolute right-0 top-full z-30 mt-2 max-h-96 w-80 overflow-y-auto rounded-lg bg-white p-2 shadow-xl">
+        <div className="absolute right-0 top-full z-30 mt-2 max-h-[32rem] w-[28rem] overflow-y-auto rounded-lg bg-white p-2 shadow-xl">
           {jobs.length === 0 ? (
             <p className="px-3 py-4 text-sm text-slate-400">
               No new vacancies detected yet
@@ -268,12 +297,25 @@ function NewVacanciesFeed({ companyId }: { companyId: string }) {
             <ul className="divide-y divide-slate-100">
               {jobs.map((job) => (
                 <li key={job.id} className="px-3 py-2">
-                  <p className="text-sm font-medium text-slate-800">{job.title}</p>
-                  <p className="text-xs text-slate-400">
-                    {job.date_added
-                      ? new Date(job.date_added).toLocaleString()
-                      : "date unknown"}
-                  </p>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedJobId((prev) => (prev === job.id ? null : job.id))
+                    }
+                    className="w-full text-left"
+                  >
+                    <p className="text-sm font-medium text-slate-800">{job.title ?? "—"}</p>
+                    <p className="text-xs text-slate-400">
+                      {job.date_added
+                        ? new Date(job.date_added).toLocaleString()
+                        : "date unknown"}
+                    </p>
+                  </button>
+                  {expandedJobId === job.id && (
+                    <div className="mt-2">
+                      <JobFieldsTable job={job} />
+                    </div>
+                  )}
                 </li>
               ))}
             </ul>

@@ -36,12 +36,44 @@ RESUME_FORMAT_BY_EXTENSION = {
 JOB_ORDER_ID_CHUNK = 200
 EVENT_MAX_EVENTS = 100
 JOB_ORDER_FIELDS = (
-    "id,title,status,employmentType,isOpen,isPublic,dateAdded,dateEnd,dateLastPublished,"
-    "startDate,benefits,bonusPackage,payRate,salary,salaryUnit,publicDescription,"
-    "publishedZip,travelRequirements,willRelocate,willSponsor,yearsRequired,"
-    "address(address1,address2,city,state,zip,countryID),"
-    "categories(id,name),businessSectors(id,name),owner(id,firstName,lastName),"
-    "publishedCategory(id,name),responseUser(id,firstName,lastName)"
+    "id,address(address1,address2,city,state,zip,countryID),benefits,billRateCategoryID,"
+    "bonusPackage,branchCode,certificationList,clientBillRate,costCenter,degreeList,"
+    "description,durationWeeks,educationDegree,employmentType,estimatedEndDate,"
+    "externalCategoryID,externalID,feeArrangement,hoursOfOperation,hoursPerWeek,"
+    "isClientEditable,isDeleted,isInterviewRequired,isJobcastPublished,isOpen,isPublic,"
+    "isWorkFromHome,jobBoardList,jobOrderRateCardID,jobPostingURL,markUpPercentage,"
+    "numOpenings,onSite,payRate,publicDescription,publishedZip,reasonClosed,reportTo,"
+    "salary,salaryUnit,screenerQuestionsStatus,skillList,source,status,taxRate,taxStatus,"
+    "title,travelRequirements,type,willRelocate,willRelocateInt,willSponsor,yearsRequired,"
+    "dateAdded,dateClosed,dateEnd,dateLastExported,dateLastModified,dateLastPublished,"
+    "startDate,timeAndLaborEnabledDate,"
+    "correlatedCustomDate1,correlatedCustomDate2,correlatedCustomDate3,"
+    "correlatedCustomFloat1,correlatedCustomFloat2,correlatedCustomFloat3,"
+    "correlatedCustomInt1,correlatedCustomInt2,correlatedCustomInt3,"
+    "correlatedCustomText1,correlatedCustomText2,correlatedCustomText3,correlatedCustomText4,"
+    "correlatedCustomText5,correlatedCustomText6,correlatedCustomText7,correlatedCustomText8,"
+    "correlatedCustomText9,correlatedCustomText10,"
+    "correlatedCustomTextBlock1,correlatedCustomTextBlock2,correlatedCustomTextBlock3,"
+    "customDate1,customDate2,customDate3,customFloat1,customFloat2,customFloat3,"
+    "customInt1,customInt2,customInt3,customInt4,customInt5,customInt6,customInt7,customInt8,"
+    "customText1,customText2,customText3,customText4,customText5,customText6,customText7,"
+    "customText8,customText9,customText10,customText11,customText12,customText13,"
+    "customText14,customText15,customText16,customText17,customText18,customText19,"
+    "customText20,customText21,customText22,customText23,customText24,customText25,"
+    "customText26,customText27,customText28,customText29,customText30,customText31,"
+    "customText32,customText33,customText34,customText35,customText36,customText37,"
+    "customText38,customText39,customText40,"
+    "customTextBlock1,customTextBlock2,customTextBlock3,customTextBlock4,customTextBlock5,"
+    "billingProfile(id),branch(id),clientContact(id),clientCorporation(id),"
+    "clientCorporationLine(id),jobCode(id),location(id),opportunity(id),"
+    "reportToClientContact(id),shift(id),workersCompRate(id),"
+    "owner(id,firstName,lastName),responseUser(id,firstName,lastName),"
+    "publishedCategory(id,name),categories(id,name),businessSectors(id,name),"
+    "appointments(id),approvedPlacements(id),assignedUsers(id),certificationGroups(id),"
+    "certifications(id),fileAttachments(id),interviews(id),jobOrderIntegrations(id),"
+    "jobOrderScreenerQuestions(id),jobShifts(id),notes(id),placements(id),sendouts(id),"
+    "shifts(id),skills(id),specialties(id),submissions(id),tasks(id),timeUnits(id),"
+    "webResponses(id)"
 )
 
 
@@ -414,12 +446,15 @@ class LiveBullhornClient:
             if "already exists" not in str(exc):
                 raise
 
-    async def poll_job_order_events(self) -> list[int]:
+    async def poll_job_order_events(self) -> list[Any]:
         payload = await self._get(
             f"event/subscription/{self._job_order_subscription_id()}",
             {"maxEvents": str(EVENT_MAX_EVENTS)},
         )
         events: list[dict[str, Any]] = payload.get("events", [])
+        print("Events")
+        print(events)
+        # return events
         return [
             int(e["entityId"])
             for e in events

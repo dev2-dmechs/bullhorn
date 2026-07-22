@@ -37,6 +37,11 @@ async def _check_and_record(company_id: str, db: AsyncSession) -> tuple[list[Job
     await client.ensure_job_order_subscription()
     event_ids = await client.poll_job_order_events()
 
+    # print("Events fetched from poling")
+    # print(event_ids)
+    # event_ids = []
+    print(event_ids)
+
     if not event_ids:
         return [], 0
 

@@ -119,32 +119,183 @@ class AddressSchema(BaseModel):
 
 class JobOrderSchema(BaseModel):
     id: int
-    title: str
-    status: str | None
-    employment_type: str | None
-    is_open: bool | None
-    is_public: int | None
-    date_added: datetime | None
-    date_end: datetime | None
-    date_last_published: datetime | None
-    start_date: datetime | None
     address: AddressSchema | None
     benefits: str | None
+    bill_rate_category_id: int | None
     bonus_package: str | None
+    branch_code: str | None
+    certification_list: str | None
+    client_bill_rate: float | None
+    cost_center: str | None
+    degree_list: str | None
+    description: str | None
+    duration_weeks: float | None
+    education_degree: str | None
+    employment_type: str | None
+    estimated_end_date: str | None
+    external_category_id: int | None
+    external_id: str | None
+    fee_arrangement: float | None
+    hours_of_operation: str | None
+    hours_per_week: float | None
+    is_client_editable: bool | None
+    is_deleted: bool | None
+    is_interview_required: bool | None
+    is_jobcast_published: bool | None
+    is_open: bool | None
+    is_public: int | None
+    is_work_from_home: bool | None
+    job_board_list: str | None
+    job_order_rate_card_id: int | None
+    job_posting_url: str | None
+    mark_up_percentage: float | None
+    num_openings: int | None
+    on_site: str | None
     pay_rate: float | None
-    salary: float | None
-    salary_unit: str | None
     public_description: str | None
     published_zip: str | None
+    reason_closed: str | None
+    report_to: str | None
+    salary: float | None
+    salary_unit: str | None
+    screener_questions_status: int | None
+    skill_list: str | None
+    source: str | None
+    status: str | None
+    tax_rate: float | None
+    tax_status: str | None
+    title: str | None
     travel_requirements: str | None
+    type: int | None
     will_relocate: bool | None
+    will_relocate_int: int | None
     will_sponsor: bool | None
     years_required: int | None
+    date_added: datetime | None
+    date_closed: datetime | None
+    date_end: datetime | None
+    date_last_exported: datetime | None
+    date_last_modified: datetime | None
+    date_last_published: datetime | None
+    start_date: datetime | None
+    time_and_labor_enabled_date: datetime | None
+    correlated_custom_date1: datetime | None
+    correlated_custom_date2: datetime | None
+    correlated_custom_date3: datetime | None
+    correlated_custom_float1: float | None
+    correlated_custom_float2: float | None
+    correlated_custom_float3: float | None
+    correlated_custom_int1: int | None
+    correlated_custom_int2: int | None
+    correlated_custom_int3: int | None
+    correlated_custom_text1: str | None
+    correlated_custom_text2: str | None
+    correlated_custom_text3: str | None
+    correlated_custom_text4: str | None
+    correlated_custom_text5: str | None
+    correlated_custom_text6: str | None
+    correlated_custom_text7: str | None
+    correlated_custom_text8: str | None
+    correlated_custom_text9: str | None
+    correlated_custom_text10: str | None
+    correlated_custom_text_block1: str | None
+    correlated_custom_text_block2: str | None
+    correlated_custom_text_block3: str | None
+    custom_date1: datetime | None
+    custom_date2: datetime | None
+    custom_date3: datetime | None
+    custom_float1: float | None
+    custom_float2: float | None
+    custom_float3: float | None
+    custom_int1: int | None
+    custom_int2: int | None
+    custom_int3: int | None
+    custom_int4: int | None
+    custom_int5: int | None
+    custom_int6: int | None
+    custom_int7: int | None
+    custom_int8: int | None
+    custom_text1: str | None
+    custom_text2: str | None
+    custom_text3: str | None
+    custom_text4: str | None
+    custom_text5: str | None
+    custom_text6: str | None
+    custom_text7: str | None
+    custom_text8: str | None
+    custom_text9: str | None
+    custom_text10: str | None
+    custom_text11: str | None
+    custom_text12: str | None
+    custom_text13: str | None
+    custom_text14: str | None
+    custom_text15: str | None
+    custom_text16: str | None
+    custom_text17: str | None
+    custom_text18: str | None
+    custom_text19: str | None
+    custom_text20: str | None
+    custom_text21: str | None
+    custom_text22: str | None
+    custom_text23: str | None
+    custom_text24: str | None
+    custom_text25: str | None
+    custom_text26: str | None
+    custom_text27: str | None
+    custom_text28: str | None
+    custom_text29: str | None
+    custom_text30: str | None
+    custom_text31: str | None
+    custom_text32: str | None
+    custom_text33: str | None
+    custom_text34: str | None
+    custom_text35: str | None
+    custom_text36: str | None
+    custom_text37: str | None
+    custom_text38: str | None
+    custom_text39: str | None
+    custom_text40: str | None
+    custom_text_block1: str | None
+    custom_text_block2: str | None
+    custom_text_block3: str | None
+    custom_text_block4: str | None
+    custom_text_block5: str | None
+    billing_profile_id: int | None
+    branch_id: int | None
+    client_contact_id: int | None
+    client_corporation_id: int | None
+    client_corporation_line_id: int | None
+    job_code_id: int | None
+    location_id: int | None
+    opportunity_id: int | None
+    report_to_client_contact_id: int | None
+    shift_id: int | None
+    workers_comp_rate_id: int | None
+    owner_name: str | None
+    response_user_name: str | None
+    published_category: str | None
     category: str | None
     business_sector: str | None
-    owner_name: str | None
-    published_category: str | None
-    response_user_name: str | None
+    appointments_ids: list[int]
+    approved_placements_ids: list[int]
+    assigned_users_ids: list[int]
+    certification_groups_ids: list[int]
+    certifications_ids: list[int]
+    file_attachments_ids: list[int]
+    interviews_ids: list[int]
+    job_order_integrations_ids: list[int]
+    job_order_screener_questions_ids: list[int]
+    job_shifts_ids: list[int]
+    notes_ids: list[int]
+    placements_ids: list[int]
+    sendouts_ids: list[int]
+    shifts_ids: list[int]
+    skills_ids: list[int]
+    specialties_ids: list[int]
+    submissions_ids: list[int]
+    tasks_ids: list[int]
+    time_units_ids: list[int]
+    web_responses_ids: list[int]
 
 
 class MatchCandidateInput(BaseModel):
