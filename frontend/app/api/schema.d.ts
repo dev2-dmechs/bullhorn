@@ -123,7 +123,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/vacancies/{company_id}/check-new": {
+    "/job-orders/{company_id}/check-new": {
         parameters: {
             query?: never;
             header?: never;
@@ -132,23 +132,57 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Check New Vacancies */
-        post: operations["check_new_vacancies_vacancies__company_id__check_new_post"];
+        /** Check New Job Orders */
+        post: operations["check_new_job_orders_job_orders__company_id__check_new_post"];
         delete?: never;
         options?: never;
         head?: never;
         patch?: never;
         trace?: never;
     };
-    "/vacancies/{company_id}/new": {
+    "/job-orders/{company_id}/new": {
         parameters: {
             query?: never;
             header?: never;
             path?: never;
             cookie?: never;
         };
-        /** Get New Vacancies */
-        get: operations["get_new_vacancies_vacancies__company_id__new_get"];
+        /** Get New Job Orders */
+        get: operations["get_new_job_orders_job_orders__company_id__new_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/job-orders/{company_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Job Orders */
+        post: operations["sync_job_orders_job_orders__company_id__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/job-orders/{company_id}/stored": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stored Job Orders */
+        get: operations["list_stored_job_orders_job_orders__company_id__stored_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -324,6 +358,19 @@ export interface components {
         HTTPValidationError: {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
+        };
+        /**
+         * JobOrderFeedResponse
+         * @description The accumulating feed of newly-detected job orders for one tenant, populated by
+         *     the background poller. In-memory only — see app/routers/job_orders.py.
+         */
+        JobOrderFeedResponse: {
+            /** Company Id */
+            company_id: string;
+            /** Jobs */
+            jobs: components["schemas"]["JobOrderSchema"][];
+            /** Last Checked At */
+            last_checked_at: string | null;
         };
         /** JobOrderSchema */
         JobOrderSchema: {
@@ -610,18 +657,12 @@ export interface components {
             custom_text_block4: string | null;
             /** Custom Text Block5 */
             custom_text_block5: string | null;
-            /** Billing Profile Id */
-            billing_profile_id: number | null;
             /** Branch Id */
             branch_id: number | null;
             /** Client Contact Id */
             client_contact_id: number | null;
             /** Client Corporation Id */
             client_corporation_id: number | null;
-            /** Client Corporation Line Id */
-            client_corporation_line_id: number | null;
-            /** Job Code Id */
-            job_code_id: number | null;
             /** Location Id */
             location_id: number | null;
             /** Opportunity Id */
@@ -656,12 +697,8 @@ export interface components {
             file_attachments_ids: number[];
             /** Interviews Ids */
             interviews_ids: number[];
-            /** Job Order Integrations Ids */
-            job_order_integrations_ids: number[];
             /** Job Order Screener Questions Ids */
             job_order_screener_questions_ids: number[];
-            /** Job Shifts Ids */
-            job_shifts_ids: number[];
             /** Notes Ids */
             notes_ids: number[];
             /** Placements Ids */
@@ -683,14 +720,23 @@ export interface components {
             /** Web Responses Ids */
             web_responses_ids: number[];
         };
+        /** JobOrderSyncResponse */
+        JobOrderSyncResponse: {
+            /** Company Id */
+            company_id: string;
+            /** Synced Count */
+            synced_count: number;
+            /** Jobs */
+            jobs: components["schemas"]["JobOrderSchema"][];
+        };
         /**
-         * NewVacancyCheckResponse
-         * @description Result of one on-demand "check for new vacancies" poll against one tenant.
+         * NewJobOrderCheckResponse
+         * @description Result of one on-demand "check for new job orders" poll against one tenant.
          *     Detection only — these jobs are not matched/scored against candidates yet.
          *     `checked_count` is the number of INSERTED JobOrder events drained from Bullhorn's
          *     Entity Events subscription this call, not a tenant-wide total.
          */
-        NewVacancyCheckResponse: {
+        NewJobOrderCheckResponse: {
             /** Company Id */
             company_id: string;
             /** New Jobs */
@@ -704,19 +750,6 @@ export interface components {
             id: number;
             /** Name */
             name: string;
-        };
-        /**
-         * VacancyFeedResponse
-         * @description The accumulating feed of newly-detected vacancies for one tenant, populated by
-         *     the background poller. In-memory only — see app/routers/vacancies.py.
-         */
-        VacancyFeedResponse: {
-            /** Company Id */
-            company_id: string;
-            /** Jobs */
-            jobs: components["schemas"]["JobOrderSchema"][];
-            /** Last Checked At */
-            last_checked_at: string | null;
         };
         /** ValidationError */
         ValidationError: {
@@ -967,7 +1000,7 @@ export interface operations {
             };
         };
     };
-    check_new_vacancies_vacancies__company_id__check_new_post: {
+    check_new_job_orders_job_orders__company_id__check_new_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -984,7 +1017,7 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["NewVacancyCheckResponse"];
+                    "application/json": components["schemas"]["NewJobOrderCheckResponse"];
                 };
             };
             /** @description Validation Error */
@@ -998,7 +1031,7 @@ export interface operations {
             };
         };
     };
-    get_new_vacancies_vacancies__company_id__new_get: {
+    get_new_job_orders_job_orders__company_id__new_get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1015,7 +1048,69 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["VacancyFeedResponse"];
+                    "application/json": components["schemas"]["JobOrderFeedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_job_orders_job_orders__company_id__sync_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOrderSyncResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_stored_job_orders_job_orders__company_id__stored_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOrderSchema"][];
                 };
             };
             /** @description Validation Error */

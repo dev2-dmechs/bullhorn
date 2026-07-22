@@ -6,10 +6,10 @@ import {
   useBusinessSectors,
   useCandidateSearch,
   useCategories,
-  useCheckNewVacancies,
+  useCheckNewJobOrders,
   useConnection,
   useCountries,
-  useNewVacanciesFeed,
+  useNewJobOrdersFeed,
   useSkills,
 } from "@/api/hooks";
 import { Badge } from "@/components/ui/badge";
@@ -195,7 +195,7 @@ export default function Search() {
             </h1>
           </div>
           <div className="flex items-center gap-3">
-            <VacancyPollingControls companyId={companyId} onResult={setToast} />
+            <JobOrderPollingControls companyId={companyId} onResult={setToast} />
             <TenantBadge
               targetCompanyId={targetCompanyId}
               onSwitch={switchTargetCompany}
@@ -221,7 +221,7 @@ function Toast({ message }: { message: string }) {
   );
 }
 
-function VacancyPollingControls({
+function JobOrderPollingControls({
   companyId,
   onResult,
 }: {
@@ -230,14 +230,14 @@ function VacancyPollingControls({
 }) {
   return (
     <div className="flex items-center gap-2">
-      <CheckVacanciesButton companyId={companyId} onResult={onResult} />
-      <NewVacanciesLink companyId={companyId} />
+      <CheckJobOrdersButton companyId={companyId} onResult={onResult} />
+      <NewJobOrdersLink companyId={companyId} />
     </div>
   );
 }
 
-function NewVacanciesLink({ companyId }: { companyId: string }) {
-  const { data } = useNewVacanciesFeed(companyId);
+function NewJobOrdersLink({ companyId }: { companyId: string }) {
+  const { data } = useNewJobOrdersFeed(companyId);
   const count = data?.jobs.length ?? 0;
 
   return (
@@ -245,7 +245,7 @@ function NewVacanciesLink({ companyId }: { companyId: string }) {
       to={`/jobs/${companyId}`}
       className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20"
     >
-      Vacancies
+      Job orders
       {count > 0 && (
         <Badge className="border-transparent bg-brand-teal text-white">
           {count}
@@ -255,7 +255,7 @@ function NewVacanciesLink({ companyId }: { companyId: string }) {
   );
 }
 
-function CheckVacanciesButton({
+function CheckJobOrdersButton({
   companyId,
   onResult,
 }: {
@@ -263,22 +263,22 @@ function CheckVacanciesButton({
   onResult: (message: string) => void;
 }) {
   const queryClient = useQueryClient();
-  const { mutateAsync, isPending } = useCheckNewVacancies(companyId);
+  const { mutateAsync, isPending } = useCheckNewJobOrders(companyId);
 
   async function handleClick() {
     try {
       const result = await mutateAsync();
       void queryClient.invalidateQueries({
-        queryKey: ["new-vacancies", companyId],
+        queryKey: ["new-job-orders", companyId],
       });
       const count = result.new_jobs.length;
       onResult(
         count === 0
-          ? "No new vacancies since last check"
-          : `${count} new vacanc${count === 1 ? "y" : "ies"} found`,
+          ? "No new job orders since last check"
+          : `${count} new job order${count === 1 ? "" : "s"} found`,
       );
     } catch {
-      onResult("Vacancy check failed");
+      onResult("Job order check failed");
     }
   }
 
@@ -290,7 +290,7 @@ function CheckVacanciesButton({
       className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3.5 py-1.5 text-sm font-medium text-white transition-colors hover:bg-white/20 disabled:opacity-60"
     >
       {isPending && <Spinner className="h-3.5 w-3.5" />}
-      Check for new vacancies
+      Check for new job orders
     </button>
   );
 }

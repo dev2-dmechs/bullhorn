@@ -64,17 +64,19 @@ JOB_ORDER_FIELDS = (
     "customText32,customText33,customText34,customText35,customText36,customText37,"
     "customText38,customText39,customText40,"
     "customTextBlock1,customTextBlock2,customTextBlock3,customTextBlock4,customTextBlock5,"
-    "billingProfile(id),branch(id),clientContact(id),clientCorporation(id),"
-    "clientCorporationLine(id),jobCode(id),location(id),opportunity(id),"
+    "branch(id),clientContact(id),clientCorporation(id),location(id),opportunity(id),"
     "reportToClientContact(id),shift(id),workersCompRate(id),"
     "owner(id,firstName,lastName),responseUser(id,firstName,lastName),"
     "publishedCategory(id,name),categories(id,name),businessSectors(id,name),"
     "appointments(id),approvedPlacements(id),assignedUsers(id),certificationGroups(id),"
-    "certifications(id),fileAttachments(id),interviews(id),jobOrderIntegrations(id),"
-    "jobOrderScreenerQuestions(id),jobShifts(id),notes(id),placements(id),sendouts(id),"
+    "certifications(id),fileAttachments(id),interviews(id),"
+    "jobOrderScreenerQuestions(id),notes(id),placements(id),sendouts(id),"
     "shifts(id),skills(id),specialties(id),submissions(id),tasks(id),timeUnits(id),"
     "webResponses(id)"
 )
+# Fields excluded above because this tenant 400s "Invalid field" on them (not licensed/
+# enabled here, discovered by testing live): billingProfile, clientCorporationLine,
+# jobCode, jobOrderIntegrations, jobShifts.
 
 
 class BullhornAuthError(RuntimeError):
@@ -433,7 +435,7 @@ class LiveBullhornClient:
         return data
 
     def _job_order_subscription_id(self) -> str:
-        return f"vacancy-poller-{self.company_id}"
+        return f"job-order-poller-{self.company_id}"
 
     async def ensure_job_order_subscription(self) -> None:
 

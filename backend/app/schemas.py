@@ -260,12 +260,9 @@ class JobOrderSchema(BaseModel):
     custom_text_block3: str | None
     custom_text_block4: str | None
     custom_text_block5: str | None
-    billing_profile_id: int | None
     branch_id: int | None
     client_contact_id: int | None
     client_corporation_id: int | None
-    client_corporation_line_id: int | None
-    job_code_id: int | None
     location_id: int | None
     opportunity_id: int | None
     report_to_client_contact_id: int | None
@@ -283,9 +280,7 @@ class JobOrderSchema(BaseModel):
     certifications_ids: list[int]
     file_attachments_ids: list[int]
     interviews_ids: list[int]
-    job_order_integrations_ids: list[int]
     job_order_screener_questions_ids: list[int]
-    job_shifts_ids: list[int]
     notes_ids: list[int]
     placements_ids: list[int]
     sendouts_ids: list[int]
@@ -324,8 +319,8 @@ class MatchScoreBatchResult(BaseModel):
     results: list[MatchScore]
 
 
-class NewVacancyCheckResponse(BaseModel):
-    """Result of one on-demand "check for new vacancies" poll against one tenant.
+class NewJobOrderCheckResponse(BaseModel):
+    """Result of one on-demand "check for new job orders" poll against one tenant.
     Detection only — these jobs are not matched/scored against candidates yet.
     `checked_count` is the number of INSERTED JobOrder events drained from Bullhorn's
     Entity Events subscription this call, not a tenant-wide total."""
@@ -335,10 +330,16 @@ class NewVacancyCheckResponse(BaseModel):
     checked_count: int
 
 
-class VacancyFeedResponse(BaseModel):
-    """The accumulating feed of newly-detected vacancies for one tenant, populated by
-    the background poller. In-memory only — see app/routers/vacancies.py."""
+class JobOrderFeedResponse(BaseModel):
+    """The accumulating feed of newly-detected job orders for one tenant, populated by
+    the background poller. In-memory only — see app/routers/job_orders.py."""
 
     company_id: str
     jobs: list[JobOrderSchema]
     last_checked_at: datetime | None
+
+
+class JobOrderSyncResponse(BaseModel):
+    company_id: str
+    synced_count: int
+    jobs: list[JobOrderSchema]

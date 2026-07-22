@@ -1,7 +1,8 @@
 from datetime import datetime
+from typing import Any
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
-from sqlalchemy.dialects.postgresql import ARRAY
+from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.database import Base
@@ -59,12 +60,24 @@ class Skill(Base):
     __table_args__ = (UniqueConstraint("company_id", "bh_skill_id"),)
 
 
-class VacancySeen(Base):
-    __tablename__ = "vacancies_seen"
+class JobOrderSeen(Base):
+    __tablename__ = "job_orders_seen"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
     company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
     bh_job_order_id: Mapped[int] = mapped_column(Integer)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+    __table_args__ = (UniqueConstraint("company_id", "bh_job_order_id"),)
+
+
+class JobOrder(Base):
+    __tablename__ = "job_orders"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    company_id: Mapped[str] = mapped_column(String(1), ForeignKey("companies.id"))
+    bh_job_order_id: Mapped[int] = mapped_column(Integer)
+    data: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    synced_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
 
     __table_args__ = (UniqueConstraint("company_id", "bh_job_order_id"),)

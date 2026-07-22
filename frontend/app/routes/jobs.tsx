@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import type { JobOrderSchema } from "@/api/client";
-import { useNewVacanciesFeed } from "@/api/hooks";
+import { useNewJobOrdersFeed } from "@/api/hooks";
 import { COMPANY_LABELS } from "@/lib/companies";
 
 function formatFieldValue(value: unknown): string {
@@ -74,7 +74,7 @@ function JobDetailModal({
 export default function Jobs() {
   const { companyId } = useParams<{ companyId: string }>();
   const [selected, setSelected] = useState<JobOrderSchema | null>(null);
-  const { data, isLoading } = useNewVacanciesFeed(companyId ?? "");
+  const { data, isLoading } = useNewJobOrdersFeed(companyId ?? "");
   const jobs = data?.jobs ?? [];
 
   return (
@@ -89,7 +89,7 @@ export default function Jobs() {
               ← Back
             </Link>
             <h1 className="text-base font-semibold text-white">
-              Vacancies — {COMPANY_LABELS[companyId ?? ""] ?? companyId}
+              Job orders — {COMPANY_LABELS[companyId ?? ""] ?? companyId}
             </h1>
           </div>
           {data?.last_checked_at && (
@@ -102,11 +102,11 @@ export default function Jobs() {
 
       <div className="mx-auto max-w-7xl px-6 py-8">
         {isLoading ? (
-          <p className="text-sm text-slate-400">Loading vacancies…</p>
+          <p className="text-sm text-slate-400">Loading job orders…</p>
         ) : jobs.length === 0 ? (
           <div className="rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
             <p className="text-sm font-medium text-brand-navy">
-              No vacancies detected yet
+              No job orders detected yet
             </p>
             <p className="mt-1 text-sm text-slate-400">
               The backend polls Bullhorn every 60s — check back shortly, or

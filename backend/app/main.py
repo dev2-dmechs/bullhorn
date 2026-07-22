@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db
-from app.routers import candidates, companies, vacancies
+from app.routers import candidates, companies, job_orders
 
 logging.basicConfig(level=logging.INFO)
 
@@ -15,7 +15,7 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await init_db()
-    poll_task = asyncio.create_task(vacancies.poll_loop())
+    poll_task = asyncio.create_task(job_orders.poll_loop())
     try:
         yield
     finally:
@@ -35,7 +35,7 @@ app.add_middleware(
 
 app.include_router(companies.router)
 app.include_router(candidates.router)
-app.include_router(vacancies.router)
+app.include_router(job_orders.router)
 
 
 @app.get("/health", tags=["health"])

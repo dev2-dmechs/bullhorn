@@ -23,8 +23,9 @@ export type CandidateSearchResponse = components["schemas"]["CandidateSearchResp
 export type AnonymisedCandidate = components["schemas"]["AnonymisedCandidate"];
 export type CandidateResume = components["schemas"]["CandidateResume"];
 export type CandidateMatch = components["schemas"]["CandidateMatch"];
-export type NewVacancyCheckResponse = components["schemas"]["NewVacancyCheckResponse"];
-export type VacancyFeedResponse = components["schemas"]["VacancyFeedResponse"];
+export type NewJobOrderCheckResponse = components["schemas"]["NewJobOrderCheckResponse"];
+export type JobOrderFeedResponse = components["schemas"]["JobOrderFeedResponse"];
+export type JobOrderSyncResponse = components["schemas"]["JobOrderSyncResponse"];
 export type JobOrderSchema = components["schemas"]["JobOrderSchema"];
 
 export function getConnection(companyId: string) {
@@ -54,12 +55,22 @@ export function searchCandidates(companyId: string, body: CandidateSearchRequest
   });
 }
 
-export function checkNewVacancies(companyId: string) {
-  return request<NewVacancyCheckResponse>(`/vacancies/${companyId}/check-new`, {
+export function checkNewJobOrders(companyId: string) {
+  return request<NewJobOrderCheckResponse>(`/job-orders/${companyId}/check-new`, {
     method: "POST",
   });
 }
 
-export function getNewVacancies(companyId: string) {
-  return request<VacancyFeedResponse>(`/vacancies/${companyId}/new`);
+export function getNewJobOrders(companyId: string) {
+  return request<JobOrderFeedResponse>(`/job-orders/${companyId}/new`);
+}
+
+export function syncJobOrders(companyId: string) {
+  return request<JobOrderSyncResponse>(`/job-orders/${companyId}/sync`, {
+    method: "POST",
+  });
+}
+
+export function getStoredJobOrders(companyId: string) {
+  return request<JobOrderSchema[]>(`/job-orders/${companyId}/stored`);
 }
