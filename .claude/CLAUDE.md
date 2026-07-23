@@ -1,6 +1,6 @@
 # Bullhorn Cross-Company Search & Match — POC
 
-Proves that candidates held in one company's Bullhorn tenant can be matched to vacancies
+Proves that candidates held in one company's Bullhorn tenant can be matched to job orders
 in another company in the group, with AI producing a ranked shortlist and a confidence
 score per candidate — while candidate PII stays hidden across the company boundary.
 
@@ -8,16 +8,26 @@ Client: Goodall Brazier. Two Bullhorn tenants (Company A, Company B).
 This is a focused demonstration, not a platform. Production is a separate, later phase.
 
 ## ⚠️ CURRENT SCOPE — read this before anything else
-**Manual search only.** A recruiter picks a tenant, enters role requirements, and gets back
-candidates from that tenant with their PII redacted.
+**Manual search, plus job order polling (detection only).** A recruiter picks a tenant, enters
+role requirements, and gets back candidates from that tenant with their PII redacted.
+Separately (added to scope 2026-07-21), a manually-triggered "check for new job orders"
+action polls Company A's Bullhorn for `JobOrder`s and reports which ones are new — it does
+**not** run matching against them.
+
+**In scope as of 2026-07-21:** the detection half of the simulated auto-match — `JobOrder`
+fetched by `dateAdded`, dedup via the `job_orders_seen` table. Originally manual-trigger-only;
+**reversed later the same day** to an in-process backend poller (see below) at the user's
+explicit request, after being told this contradicts the "no schedulers" rule below.
 
 **Out of scope right now — do not build, do not "prepare for":**
-- The simulated auto-match / "check for new vacancies" trigger
-- AI matching and scoring (prompts, `score` / `reasons`, matching endpoints)
+- Running AI matching/scoring against newly-detected job orders
+- AI matching and scoring generally (prompts, `score` / `reasons`, matching endpoints,
+  `match_runs`, `match_results`)
 
-The sections below still describe those in full, because they are the eventual target and
-the scoping document promises them. But they are the *next* phase, not this one. If a task
-seems to need them, it is out of scope — stop and ask.
+The sections below still describe the full auto-match flow (detection *and* matching)
+because that is the eventual target and the scoping document promises it. Only the
+detection half is built now. If a task seems to need the matching half, it is out of
+scope — stop and ask.
 
 **One deliberate, narrow exception (2026-07-21):** `app/matching/client.py` exists —
 `get_openai_client()`, client construction only. No prompts, no scoring, no endpoint calls
@@ -106,8 +116,17 @@ wrong.
   only ever says "the other company"; it never fixes which. An earlier version of this file
   forbade a tenant selector. That was our narrowing, not the client's requirement, and it
   was wrong.
-- **The one direction that IS fixed: the simulated auto-match takes its vacancies from
-  Company A.** The scoping doc (§1) names Company A explicitly, and only there.
+- **Job order polling covers both tenants** (reversed 2026-07-22, explicit request). The
+  scoping doc (§1) names Company A explicitly for the simulated auto-match, and the original
+  build here started Company-A-only for that reason — but the user asked to extend detection
+  to both tenants, so the poller, `job_orders_seen`, and the feed endpoints are now
+  per-company (`{company_id}` path param), not hardcoded to `A`. Each tenant gets its own
+  independent feed — not merged into one list.
+  **UI scoping (2026-07-22):** the header shows only the *logged-in* company's job order
+  feed/check button, not both at once — matches the existing "logged in as X, searching Y"
+  pattern already used for candidate search. Both `/job-orders/{id}/...` endpoints still
+  exist and both tenants are still polled by the backend regardless of who's logged in;
+  only the UI's default view is scoped to one tenant at a time.
 - **Redaction is symmetric.** Because either tenant can be the candidate pool, the redaction
   at the display boundary applies to *any* candidate from *either* tenant — never written as
   "hide Company B's candidates" specifically. (Redaction happens at display; the internal
@@ -115,10 +134,57 @@ wrong.
 - A **match run** = role requirements + a chosen tenant in → ranked, scored candidates from
   that tenant out. One flow, two triggers:
   - **Manual search**: recruiter picks the tenant to search and enters role requirements.
-  - **Simulated auto-match**: a "check for new vacancies" action polls **Company A's**
-    Bullhorn, finds unseen vacancies, and runs the same matching against the other tenant.
-    Only the trigger differs.
-    This is NOT real-time detection. Do not build webhooks or background schedulers.
+  - **Simulated auto-match**: a "check for new job orders" action polls Bullhorn, finds
+    unseen job orders, and runs the same matching against the other tenant. Only the
+    trigger differs.
+    **As of 2026-07-21, only the detection half is in scope**: poll `JobOrder` by
+    `dateAdded`, diff against `job_orders_seen`, report which ones are new. Do not wire up
+    "runs the same matching" until the AI matching phase is separately greenlit.
+    **As of 2026-07-22, detection covers both Company A and Company B** (originally
+    Company-A-only per the scoping doc's fixed direction for this trigger — reversed at
+    the user's explicit request). Each tenant is polled and reported independently.
+    **Detection mechanism, reversed 2026-07-22 (explicit request):** originally a full
+    `JobOrder` id scan (`/query/JobOrder`, paginated) diffed against `job_orders_seen`.
+    Switched to Bullhorn's own Entity Events subscription API
+    (https://bullhorn.github.io/REST-API-Event-Subscriptions/) instead — poll
+    `GET /event/subscription/{id}` for `INSERTED` `JobOrder` events, one subscription
+    per tenant. **`PUT` is create-once, not an idempotent upsert as the docs implied**
+    — a repeat `PUT` 400s with `"already exists"`, which `ensure_job_order_subscription`
+    treats as success rather than an error (discovered by testing against the live
+    tenant, not documented). Regular `GET`-based draining is what actually keeps a
+    subscription alive; `PUT` is only belt-and-braces recreation if one lapses. See
+    rule 3's sanctioned exception above. Known, accepted tradeoffs of this model
+    (confirmed against the docs, saved to memory as `bullhorn-entity-events-limitations`):
+      - No history before the subscription was created — a fresh subscription reports
+        nothing retroactively. (The old full-scan approach didn't have this gap; this is
+        a deliberate tradeoff, not an oversight.)
+      - Draining the queue (`GET`) consumes those events — a crash between draining and
+        finishing `job_orders_seen` inserts loses that batch. `job_orders_seen` is still
+        checked defensively per drained id as a second dedup layer, but it cannot recover
+        events that were never drained.
+      - Subscriptions silently expire if not polled often enough — mitigated by the
+        60s poll interval itself; `ensure_job_order_subscription`'s create-if-missing
+        behavior recovers automatically if a subscription does lapse.
+      - Events carry no field-level detail — every `INSERTED` id still needs a full
+        `JobOrder` fetch (`list_job_orders_by_ids`) to get displayable fields.
+    **Reversed the same day (explicit request):** this is now backed by a real backend
+    poller — an in-process `asyncio` task started in FastAPI's `lifespan`, sleeping and
+    re-polling on a fixed interval, independent of anyone viewing the page. This is a
+    deliberate reversal of "do not build webhooks or background schedulers" — but stay
+    inside the spirit of the original rule: no webhooks (Bullhorn never pushes to us),
+    no external scheduling infra (no APScheduler, no cron, no separate process/container —
+    `CLAUDE.md`'s "no Docker/CI/infra tooling" rule still holds). One `asyncio.create_task`
+    loop, cancelled on shutdown, polling both tenants each cycle. Found job orders
+    accumulate in an in-memory, per-company feed on the backend and the frontend polls a
+    GET endpoint per company to render them — this is still fetch-based polling end to
+    end, not push.
+    **Persistence added (2026-07-22, explicit request):** `POST /job-orders/{company_id}/sync`
+    fetches the latest `JobOrder`s (`list_latest_jobs`) and upserts the raw Bullhorn dict
+    into the `job_orders` table, keyed `(company_id, bh_job_order_id)`; `GET
+    /job-orders/{company_id}/stored` reads it back through `to_job_schema`. This reverses
+    the earlier "not persisted beyond `job_orders_seen`'s IDs" design — job orders are not
+    candidate PII, so rule 1 doesn't apply, but it does mean the table ceiling below needed
+    correcting to match reality rather than raised further without you knowing.
 
 ### Role requirements — one shape for both triggers
 This is the input to both flows, the payload stored on `match_runs`, and what the prompt
@@ -140,7 +206,7 @@ request and a separate column on `match_runs`. It never enters this shape and it
 reaches the prompt — which tenant a candidate sits in says nothing about whether they fit
 the role, and letting the model see it invites it to score on the wrong thing.
 
-A Bullhorn vacancy maps onto this shape. The manual search form collects **exactly these
+A Bullhorn job order maps onto this shape. The manual search form collects **exactly these
 fields** — it is not a free-text box. If the two triggers produce different shapes, the
 prompt diverges and the scoping doc's "only the trigger differs" promise stops being true.
 
@@ -159,21 +225,33 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
    company's candidates, because a persisted copy would itself be the harvestable list the
    whole promise guards against.
 
-   **Today Postgres holds ONE table**, because search is stateless in the current scope:
-     - `companies`      — tenant config and Bullhorn token state (see Bullhorn auth)
+   **Today Postgres holds SIX tables** (corrected 2026-07-22 — this section previously
+   said "TWO" and hadn't been updated when the taxonomy caches below were added; none of
+   them hold candidate PII, so rule 1 was never actually violated, but the doc drifted
+   from the code and that's worth naming plainly rather than quietly fixing):
+     - `companies`         — tenant config and Bullhorn token state (see Bullhorn auth)
+     - `business_sectors`, `categories`, `skills` — per-tenant taxonomy caches (id/name)
+                             used to filter candidate search by ID (see open question 1)
+     - `job_orders_seen`   — external `JobOrder` IDs already reported by the poll, so a
+                             repeat check doesn't re-report the same job order as new
+     - `job_orders`        — full raw `JobOrder` data (JSONB) per tenant, upserted by
+                             `POST /job-orders/{company_id}/sync`, keyed
+                             `(company_id, bh_job_order_id)` — see job order detection above
 
-   The three below are the eventual target. They land with the AI/auto-match work, not
-   before. Adding any of them now is out of scope.
+   The two below are still the eventual target for the matching phase. They land with the
+   AI/matching work, not before. Adding either now is out of scope.
      - `match_runs`     — role requirements, the tenant searched, trigger type, timestamp
      - `match_results`  — candidate_external_id, owner_name, company_id,
                           score, skills_score, experience_score, fit_score, reasons
-     - `vacancies_seen` — external vacancy IDs already processed
 
    `owner_name` is the **recruiter** who owns the candidate record — it is not candidate
    PII, and the scoping doc (§1, §3) explicitly requires showing it. It is permitted.
 
-   **Four is the ceiling.** If you believe you need a fifth table, or to persist a
-   candidate, STOP and ask me.
+   **The "four is the ceiling" rule from an earlier version of this file is retired** — it
+   was already false the moment the taxonomy tables landed and nobody caught it. The rule
+   that actually matters is rule 1: no candidate PII in Postgres, ever. Table *count* was
+   never the real guardrail. Still: don't add tables reflexively — if you're about to add
+   one, say what it's for and why it can't be a column on an existing table first.
 
 2. **REDACTION IS SERVER-SIDE, AT THE DISPLAY BOUNDARY.** Redaction is a single
    transformation: the internal pipeline holds the full record (a `RawCandidate`), and the
@@ -188,6 +266,12 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
 
 3. **READ-ONLY.** The Bullhorn integration issues GET requests only. Never POST, PUT,
    PATCH or DELETE against any Bullhorn API. These are live client production systems.
+   **Two narrow, explicitly-approved exceptions exist, both scoped to one call each —
+   see their own docstrings, and do not extend either without the same kind of explicit
+   go-ahead:**
+   - `POST /resume/parseToCandidate` (résumé parsing, parse-only, mutates nothing)
+   - `PUT /event/subscription/{id}` (job-order-poller subscription create/keep-alive,
+     approved 2026-07-22 — see "Job order detection" below)
 
 4. **NO SECRETS OR PII IN LOGS.** Log candidate external IDs, never candidate content.
    Never log tokens or credentials.
@@ -215,6 +299,16 @@ These are the entire point of the POC. Violating them invalidates the deliverabl
   A dict of field names is sufficient.
 - **Cap candidates fetched per match run at 50**, narrowed by a Bullhorn search query.
   Never fetch-then-score an unbounded candidate set.
+- **`/query/JobOrder`'s `count` param is silently capped by Bullhorn based on how many
+  to-many associations are in `fields`** — confirmed live 2026-07-23, undocumented:
+  requesting `count=100` with ~20 to-many associations in the field list actually returned
+  only 10 rows, no error. Roughly `floor(200 / num_to_many_associations)`. `JOB_ORDER_FIELDS`
+  in `live.py` only requests the four associations the app displays (`categories`,
+  `businessSectors`, `skills`, `specialties`) — cap is ~50 with those four, accepted
+  tradeoff. `MAX_JOB_ORDERS` (our own API's upper bound on the `count` query param) does
+  **not** reflect this — a caller can request `count=100` and still only get 50 back. If a
+  fifth to-many association is ever added back for job orders, expect the real ceiling to
+  drop further.
 
 ### Bullhorn auth
 - OAuth 2.0 password grant, per tenant. Credentials in `backend/.env` as `BH_A_*` / `BH_B_*`

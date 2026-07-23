@@ -1,0 +1,195 @@
+[
+  {
+    "id": 2909,
+    "address": {
+      "address1": null,
+      "address2": null,
+      "city": "Dallas",
+      "state": "Texas",
+      "zip": null,
+      "countryID": 1,
+      "countryName": "United States"
+    },
+    "benefits": null,
+    "billRateCategoryID": null,
+    "bonusPackage": null,
+    "branchCode": null,
+    "certificationList": null,
+    "clientBillRate": null,
+    "costCenter": null,
+    "degreeList": null,
+    "description": "<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">I need 2 dirt/grading foremen that if hired would need them to bring a crew of 5 with them. (Blade Operator, Loader Operator, Excavator Operator, Roller Operator, Dozer Operator). Need them ASAP!</span></span></span><br>\n<br>\n<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><strong><u><span style=\"font-size: 11.0pt;\">Foreman-Wage $2300 week $119,600 per year</span></u></strong></span></span>\n<ul>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Pick up</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Gas Card</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Toll Tag</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">16 Weeks PTO</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Phone or Phone Allowance $75/month</span></span></span>\n</ul>\n<br>\n<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Operators $29-$34 per hour</span></span></span><br>\n<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">***Higher range is for Finish Blade and Finish Dozer Operators***</span></span></span><br>\n ",
+    "durationWeeks": 2,
+    "educationDegree": null,
+    "employmentType": "Contingent",
+    "estimatedEndDate": null,
+    "externalCategoryID": null,
+    "externalID": null,
+    "feeArrangement": 0,
+    "hoursOfOperation": null,
+    "hoursPerWeek": 40,
+    "isClientEditable": false,
+    "isDeleted": false,
+    "isInterviewRequired": true,
+    "isJobcastPublished": null,
+    "isOpen": true,
+    "isPublic": 0,
+    "isWorkFromHome": false,
+    "jobBoardList": null,
+    "jobPostingURL": null,
+    "markUpPercentage": 0,
+    "numOpenings": 1,
+    "onSite": "On-Site",
+    "payRate": 0,
+    "publicDescription": "<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">I need 2 dirt/grading foremen that if hired would need them to bring a crew of 5 with them. (Blade Operator, Loader Operator, Excavator Operator, Roller Operator, Dozer Operator). Need them ASAP!</span></span></span><br>\n<br>\n<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><strong><u><span style=\"font-size: 11.0pt;\">Foreman-Wage $2300 week $119,600 per year</span></u></strong></span></span>\n<ul>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Pick up</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Gas Card</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Toll Tag</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">16 Weeks PTO</span></span></span>\n\t<li style=\"margin: 0.0cm 0.0cm 0.0cm 36.0pt;\"><span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Phone or Phone Allowance $75/month</span></span></span>\n</ul>\n<br>\n<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">Operators $29-$34 per hour</span></span></span><br>\n<span style=\"font-size: 12.0pt;\"><span style=\"font-family: Aptos , sans-serif;\"><span style=\"font-size: 11.0pt;\">***Higher range is for Finish Blade and Finish Dozer Operators***</span></span></span><br>\n ",
+    "publishedZip": null,
+    "reasonClosed": null,
+    "reportTo": null,
+    "salary": 120000,
+    "salaryUnit": "",
+    "screenerQuestionsStatus": null,
+    "skillList": null,
+    "source": "Existing Relationship",
+    "status": "Accepting Candidates",
+    "taxRate": 0,
+    "taxStatus": "W2",
+    "title": "Foreman - Dirt/Grading",
+    "travelRequirements": null,
+    "type": 0,
+    "willRelocate": false,
+    "willRelocateInt": 0,
+    "willSponsor": false,
+    "yearsRequired": 0,
+    "dateAdded": 1784664583583,
+    "dateClosed": null,
+    "dateEnd": null,
+    "dateLastExported": null,
+    "dateLastModified": 1784664583790,
+    "dateLastPublished": null,
+    "startDate": 1784606400000,
+    "timeAndLaborEnabledDate": null,
+    "branch": null,
+    "clientContact": {
+      "id": 44066,
+      "firstName": "Steven",
+      "lastName": "Medina"
+    },
+    "clientCorporation": {
+      "id": 5326,
+      "name": "Reyes Group Ltd"
+    },
+    "location": null,
+    "opportunity": null,
+    "reportToClientContact": null,
+    "shift": null,
+    "workersCompRate": null,
+    "owner": {
+      "id": 31400,
+      "firstName": "Richard",
+      "lastName": "Ryding"
+    },
+    "responseUser": null,
+    "publishedCategory": null,
+    "categories": {
+      "total": 0,
+      "data": []
+    },
+    "businessSectors": {
+      "total": 0,
+      "data": []
+    },
+    "appointments": {
+      "total": 0,
+      "data": []
+    },
+    "approvedPlacements": {
+      "total": 0,
+      "data": []
+    },
+    "assignedUsers": {
+      "total": 0,
+      "data": []
+    },
+    "certificationGroups": {
+      "total": 0,
+      "data": []
+    },
+    "certifications": {
+      "total": 0,
+      "data": []
+    },
+    "fileAttachments": {
+      "total": 0,
+      "data": []
+    },
+    "interviews": {
+      "total": 0,
+      "data": []
+    },
+    "jobOrderScreenerQuestions": {
+      "total": 0,
+      "data": []
+    },
+    "notes": {
+      "total": 0,
+      "data": []
+    },
+    "placements": {
+      "total": 0,
+      "data": []
+    },
+    "sendouts": {
+      "total": 1,
+      "data": [
+        {
+          "id": 6325
+        }
+      ]
+    },
+    "shifts": {
+      "total": 0,
+      "data": []
+    },
+    "skills": {
+      "total": 3,
+      "data": [
+        {
+          "id": 1000376,
+          "name": "Dirt"
+        },
+        {
+          "id": 1000105,
+          "name": "Excavation"
+        },
+        {
+          "id": 1000000,
+          "name": "Grading"
+        }
+      ]
+    },
+    "specialties": {
+      "total": 0,
+      "data": []
+    },
+    "submissions": {
+      "total": 1,
+      "data": [
+        {
+          "id": 4766
+        }
+      ]
+    },
+    "tasks": {
+      "total": 0,
+      "data": []
+    },
+    "timeUnits": {
+      "total": 0,
+      "data": []
+    },
+    "webResponses": {
+      "total": 0,
+      "data": []
+    }
+  }
+]

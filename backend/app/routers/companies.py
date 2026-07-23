@@ -2,11 +2,11 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.bullhorn.live import BullhornAuthError, LiveBullhornClient
+from app.bullhorn.live import MAX_JOB_ORDERS, BullhornAuthError, LiveBullhornClient
 from app.config import get_settings
 from app.database import get_db
 from app.models import BusinessSector, Category, Company, Skill
@@ -150,19 +150,26 @@ async def list_countries(
     ]
 
 
-@router.get("/{company_id}/jobs", response_model=list[JobOrderSchema])
+@router.get("/{company_id}/jobs")
 async def list_latest_jobs(
-    company_id: str, db: AsyncSession = Depends(get_db)
-) -> list[JobOrderSchema]:
+    company_id: str,
+    count: int = Query(default=100, ge=1, le=MAX_JOB_ORDERS),
+    db: AsyncSession = Depends(get_db),
+) -> list[dict[str, Any]]:
     company = await _company(company_id, db)
 
     client = LiveBullhornClient(company_id=company.id, db=db)
     try:
-        jobs = await client.list_latest_jobs(count=100)
+        jobs = await client.list_latest_jobs(count=count)
     except BullhornAuthError as exc:
         raise HTTPException(status_code=502, detail="Bullhorn job order lookup failed") from exc
 
-    return [_to_job_schema(j) for j in jobs]
+    return jobs
+
+
+# *******************
+# Helpers
+# *******************
 
 
 def _full_name(person: dict[str, Any] | None) -> str | None:
@@ -171,53 +178,102 @@ def _full_name(person: dict[str, Any] | None) -> str | None:
     return f"{person.get('firstName', '')} {person.get('lastName', '')}".strip() or None
 
 
-def _to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
-    categories = raw.get("categories", {}).get("data", []) if raw.get("categories") else []
-    business_sectors = (
-        raw.get("businessSectors", {}).get("data", []) if raw.get("businessSectors") else []
+def _to_address(address: dict[str, Any] | None) -> AddressSchema | None:
+    if not address:
+        return None
+    return AddressSchema(
+        address1=address.get("address1"),
+        address2=address.get("address2"),
+        city=address.get("city"),
+        state=address.get("state"),
+        zip=address.get("zip"),
+        country_id=address.get("countryID"),
+        country_name=address.get("countryName"),
     )
-    published_category = raw.get("publishedCategory")
-    address = raw.get("address")
 
+
+def _association_names(raw: dict[str, Any], field: str) -> list[str]:
+    return [a["name"] for a in (raw.get(field, {}).get("data") or []) if a.get("name")]
+
+
+def to_job_schema(raw: dict[str, Any]) -> JobOrderSchema:
     return JobOrderSchema(
         id=raw["id"],
-        title=raw["title"],
-        status=raw.get("status"),
+        address=_to_address(raw.get("address")),
+        benefits=raw.get("benefits"),
+        bill_rate_category_id=raw.get("billRateCategoryID"),
+        bonus_package=raw.get("bonusPackage"),
+        branch_code=raw.get("branchCode"),
+        certification_list=raw.get("certificationList"),
+        client_bill_rate=raw.get("clientBillRate"),
+        cost_center=raw.get("costCenter"),
+        degree_list=raw.get("degreeList"),
+        description=raw.get("description"),
+        duration_weeks=raw.get("durationWeeks"),
+        education_degree=raw.get("educationDegree"),
         employment_type=raw.get("employmentType"),
+        estimated_end_date=raw.get("estimatedEndDate"),
+        external_category_id=raw.get("externalCategoryID"),
+        external_id=raw.get("externalID"),
+        fee_arrangement=raw.get("feeArrangement"),
+        hours_of_operation=raw.get("hoursOfOperation"),
+        hours_per_week=raw.get("hoursPerWeek"),
+        is_client_editable=raw.get("isClientEditable"),
+        is_deleted=raw.get("isDeleted"),
+        is_interview_required=raw.get("isInterviewRequired"),
+        is_jobcast_published=raw.get("isJobcastPublished"),
         is_open=raw.get("isOpen"),
         is_public=raw.get("isPublic"),
-        date_added=_parse_bh_timestamp(raw.get("dateAdded")),
-        date_end=_parse_bh_timestamp(raw.get("dateEnd")),
-        date_last_published=_parse_bh_timestamp(raw.get("dateLastPublished")),
-        start_date=_parse_bh_timestamp(raw.get("startDate")),
-        address=(
-            AddressSchema(
-                address1=address.get("address1"),
-                address2=address.get("address2"),
-                city=address.get("city"),
-                state=address.get("state"),
-                zip=address.get("zip"),
-                country_id=address.get("countryID"),
-            )
-            if address
-            else None
-        ),
-        benefits=raw.get("benefits"),
-        bonus_package=raw.get("bonusPackage"),
+        is_work_from_home=raw.get("isWorkFromHome"),
+        job_board_list=raw.get("jobBoardList"),
+        job_order_rate_card_id=raw.get("jobOrderRateCardID"),
+        job_posting_url=raw.get("jobPostingURL"),
+        mark_up_percentage=raw.get("markUpPercentage"),
+        num_openings=raw.get("numOpenings"),
+        on_site=raw.get("onSite"),
         pay_rate=raw.get("payRate"),
-        salary=raw.get("salary"),
-        salary_unit=raw.get("salaryUnit"),
         public_description=raw.get("publicDescription"),
         published_zip=raw.get("publishedZip"),
+        reason_closed=raw.get("reasonClosed"),
+        report_to=raw.get("reportTo"),
+        salary=raw.get("salary"),
+        salary_unit=raw.get("salaryUnit"),
+        screener_questions_status=raw.get("screenerQuestionsStatus"),
+        skill_list=raw.get("skillList"),
+        source=raw.get("source"),
+        status=raw.get("status"),
+        tax_rate=raw.get("taxRate"),
+        tax_status=raw.get("taxStatus"),
+        title=raw.get("title"),
         travel_requirements=raw.get("travelRequirements"),
+        type=raw.get("type"),
         will_relocate=raw.get("willRelocate"),
+        will_relocate_int=raw.get("willRelocateInt"),
         will_sponsor=raw.get("willSponsor"),
         years_required=raw.get("yearsRequired"),
-        category=categories[0]["name"] if categories else None,
-        business_sector=business_sectors[0]["name"] if business_sectors else None,
+        date_added=_parse_bh_timestamp(raw.get("dateAdded")),
+        date_closed=_parse_bh_timestamp(raw.get("dateClosed")),
+        date_end=_parse_bh_timestamp(raw.get("dateEnd")),
+        date_last_exported=_parse_bh_timestamp(raw.get("dateLastExported")),
+        date_last_modified=_parse_bh_timestamp(raw.get("dateLastModified")),
+        date_last_published=_parse_bh_timestamp(raw.get("dateLastPublished")),
+        start_date=_parse_bh_timestamp(raw.get("startDate")),
+        time_and_labor_enabled_date=_parse_bh_timestamp(raw.get("timeAndLaborEnabledDate")),
+        branch_id=(raw.get("branch") or {}).get("id"),
+        client_contact_id=(raw.get("clientContact") or {}).get("id"),
+        client_corporation_id=(raw.get("clientCorporation") or {}).get("id"),
+        location_id=(raw.get("location") or {}).get("id"),
+        opportunity_id=(raw.get("opportunity") or {}).get("id"),
+        report_to_client_contact_id=(raw.get("reportToClientContact") or {}).get("id"),
+        shift_id=(raw.get("shift") or {}).get("id"),
+        workers_comp_rate_id=(raw.get("workersCompRate") or {}).get("id"),
         owner_name=_full_name(raw.get("owner")),
-        published_category=published_category.get("name") if published_category else None,
         response_user_name=_full_name(raw.get("responseUser")),
+        published_category=(raw.get("publishedCategory") or {}).get("name"),
+        categories=_association_names(raw, "categories"),
+        business_sectors=_association_names(raw, "businessSectors"),
+        skills=_association_names(raw, "skills"),
+        specialties=_association_names(raw, "specialties"),
     )
 
 

@@ -91,7 +91,7 @@ async with engine.connect() as conn:
 - `raise HTTPException(status_code=..., detail=...)`. Nothing custom.
 - **Never leak an upstream API's error body to the client — and never log it either.**
   A Bullhorn 4xx body can contain candidate data or token material. Catch it, log the status
-  code and the candidate/vacancy external ID, and raise your own HTTPException.
+  code and the candidate/job order external ID, and raise your own HTTPException.
 
 ## Python
 - Type-hint every signature. mypy must pass.

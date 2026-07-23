@@ -123,6 +123,74 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/job-orders/{company_id}/check-new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Check New Job Orders */
+        post: operations["check_new_job_orders_job_orders__company_id__check_new_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/job-orders/{company_id}/new": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get New Job Orders */
+        get: operations["get_new_job_orders_job_orders__company_id__new_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/job-orders/{company_id}/sync": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Sync Job Orders */
+        post: operations["sync_job_orders_job_orders__company_id__sync_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/job-orders/{company_id}/stored": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Stored Job Orders */
+        get: operations["list_stored_job_orders_job_orders__company_id__stored_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -158,6 +226,8 @@ export interface components {
             zip: string | null;
             /** Country Id */
             country_id: number | null;
+            /** Country Name */
+            country_name: string | null;
         };
         /** AnonymisedCandidate */
         AnonymisedCandidate: {
@@ -222,10 +292,16 @@ export interface components {
         CandidateSearchRequest: {
             /** Category Ids */
             category_ids?: number[];
+            /** Category Names */
+            category_names?: string[];
             /** Skill Ids */
             skill_ids?: number[];
+            /** Skill Names */
+            skill_names?: string[];
             /** Business Sector Ids */
             business_sector_ids?: number[];
+            /** Business Sector Names */
+            business_sector_names?: string[];
             /** Country Ids */
             country_ids?: number[];
             /** Title */
@@ -291,61 +367,196 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * JobOrderFeedResponse
+         * @description The accumulating feed of newly-detected job orders for one tenant, populated by
+         *     the background poller. In-memory only — see app/routers/job_orders.py.
+         */
+        JobOrderFeedResponse: {
+            /** Company Id */
+            company_id: string;
+            /** Jobs */
+            jobs: components["schemas"]["JobOrderSchema"][];
+            /** Last Checked At */
+            last_checked_at: string | null;
+        };
         /** JobOrderSchema */
         JobOrderSchema: {
             /** Id */
             id: number;
-            /** Title */
-            title: string;
-            /** Status */
-            status: string | null;
+            address: components["schemas"]["AddressSchema"] | null;
+            /** Benefits */
+            benefits: string | null;
+            /** Bill Rate Category Id */
+            bill_rate_category_id: number | null;
+            /** Bonus Package */
+            bonus_package: string | null;
+            /** Branch Code */
+            branch_code: string | null;
+            /** Certification List */
+            certification_list: string | null;
+            /** Client Bill Rate */
+            client_bill_rate: number | null;
+            /** Cost Center */
+            cost_center: string | null;
+            /** Degree List */
+            degree_list: string | null;
+            /** Description */
+            description: string | null;
+            /** Duration Weeks */
+            duration_weeks: number | null;
+            /** Education Degree */
+            education_degree: string | null;
             /** Employment Type */
             employment_type: string | null;
+            /** Estimated End Date */
+            estimated_end_date: string | null;
+            /** External Category Id */
+            external_category_id: number | null;
+            /** External Id */
+            external_id: string | null;
+            /** Fee Arrangement */
+            fee_arrangement: number | null;
+            /** Hours Of Operation */
+            hours_of_operation: string | null;
+            /** Hours Per Week */
+            hours_per_week: number | null;
+            /** Is Client Editable */
+            is_client_editable: boolean | null;
+            /** Is Deleted */
+            is_deleted: boolean | null;
+            /** Is Interview Required */
+            is_interview_required: boolean | null;
+            /** Is Jobcast Published */
+            is_jobcast_published: boolean | null;
             /** Is Open */
             is_open: boolean | null;
             /** Is Public */
             is_public: number | null;
-            /** Date Added */
-            date_added: string | null;
-            /** Date End */
-            date_end: string | null;
-            /** Date Last Published */
-            date_last_published: string | null;
-            /** Start Date */
-            start_date: string | null;
-            address: components["schemas"]["AddressSchema"] | null;
-            /** Benefits */
-            benefits: string | null;
-            /** Bonus Package */
-            bonus_package: string | null;
+            /** Is Work From Home */
+            is_work_from_home: boolean | null;
+            /** Job Board List */
+            job_board_list: string | null;
+            /** Job Order Rate Card Id */
+            job_order_rate_card_id: number | null;
+            /** Job Posting Url */
+            job_posting_url: string | null;
+            /** Mark Up Percentage */
+            mark_up_percentage: number | null;
+            /** Num Openings */
+            num_openings: number | null;
+            /** On Site */
+            on_site: string | null;
             /** Pay Rate */
             pay_rate: number | null;
-            /** Salary */
-            salary: number | null;
-            /** Salary Unit */
-            salary_unit: string | null;
             /** Public Description */
             public_description: string | null;
             /** Published Zip */
             published_zip: string | null;
+            /** Reason Closed */
+            reason_closed: string | null;
+            /** Report To */
+            report_to: string | null;
+            /** Salary */
+            salary: number | null;
+            /** Salary Unit */
+            salary_unit: string | null;
+            /** Screener Questions Status */
+            screener_questions_status: number | null;
+            /** Skill List */
+            skill_list: string | null;
+            /** Source */
+            source: string | null;
+            /** Status */
+            status: string | null;
+            /** Tax Rate */
+            tax_rate: number | null;
+            /** Tax Status */
+            tax_status: string | null;
+            /** Title */
+            title: string | null;
             /** Travel Requirements */
             travel_requirements: string | null;
+            /** Type */
+            type: number | null;
             /** Will Relocate */
             will_relocate: boolean | null;
+            /** Will Relocate Int */
+            will_relocate_int: number | null;
             /** Will Sponsor */
             will_sponsor: boolean | null;
             /** Years Required */
             years_required: number | null;
-            /** Category */
-            category: string | null;
-            /** Business Sector */
-            business_sector: string | null;
+            /** Date Added */
+            date_added: string | null;
+            /** Date Closed */
+            date_closed: string | null;
+            /** Date End */
+            date_end: string | null;
+            /** Date Last Exported */
+            date_last_exported: string | null;
+            /** Date Last Modified */
+            date_last_modified: string | null;
+            /** Date Last Published */
+            date_last_published: string | null;
+            /** Start Date */
+            start_date: string | null;
+            /** Time And Labor Enabled Date */
+            time_and_labor_enabled_date: string | null;
+            /** Branch Id */
+            branch_id: number | null;
+            /** Client Contact Id */
+            client_contact_id: number | null;
+            /** Client Corporation Id */
+            client_corporation_id: number | null;
+            /** Location Id */
+            location_id: number | null;
+            /** Opportunity Id */
+            opportunity_id: number | null;
+            /** Report To Client Contact Id */
+            report_to_client_contact_id: number | null;
+            /** Shift Id */
+            shift_id: number | null;
+            /** Workers Comp Rate Id */
+            workers_comp_rate_id: number | null;
             /** Owner Name */
             owner_name: string | null;
-            /** Published Category */
-            published_category: string | null;
             /** Response User Name */
             response_user_name: string | null;
+            /** Published Category */
+            published_category: string | null;
+            /** Categories */
+            categories: string[];
+            /** Business Sectors */
+            business_sectors: string[];
+            /** Skills */
+            skills: string[];
+            /** Specialties */
+            specialties: string[];
+        };
+        /** JobOrderSyncResponse */
+        JobOrderSyncResponse: {
+            /** Company Id */
+            company_id: string;
+            /** Synced Count */
+            synced_count: number;
+            /** Jobs */
+            jobs: components["schemas"]["JobOrderSchema"][];
+        };
+        /**
+         * NewJobOrderCheckResponse
+         * @description Result of one on-demand "check for new job orders" poll against one tenant.
+         *     Detection only — these jobs are not matched/scored against candidates yet.
+         *     `checked_count` is the number of INSERTED JobOrder events drained from Bullhorn's
+         *     Entity Events subscription this call, not a tenant-wide total.
+         */
+        NewJobOrderCheckResponse: {
+            /** Company Id */
+            company_id: string;
+            /** New Jobs */
+            new_jobs: components["schemas"]["JobOrderSchema"][];
+            /** Checked Count */
+            checked_count: number;
         };
         /** TaxonomyOption */
         TaxonomyOption: {
@@ -539,7 +750,9 @@ export interface operations {
     };
     list_latest_jobs_companies__company_id__jobs_get: {
         parameters: {
-            query?: never;
+            query?: {
+                count?: number;
+            };
             header?: never;
             path: {
                 company_id: string;
@@ -554,7 +767,9 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["JobOrderSchema"][];
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */
@@ -590,6 +805,132 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CandidateSearchResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_new_job_orders_job_orders__company_id__check_new_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NewJobOrderCheckResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_new_job_orders_job_orders__company_id__new_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOrderFeedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sync_job_orders_job_orders__company_id__sync_post: {
+        parameters: {
+            query?: {
+                count?: number;
+            };
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOrderSyncResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_stored_job_orders_job_orders__company_id__stored_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                company_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JobOrderSchema"][];
                 };
             };
             /** @description Validation Error */
