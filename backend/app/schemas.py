@@ -13,6 +13,11 @@ class ConnectionRead(BaseModel):
     detail: str | None = None
 
 
+class CompanySchema(BaseModel):
+    id: str
+    name: str
+
+
 class BaseOption(BaseModel):
     id: int
     name: str

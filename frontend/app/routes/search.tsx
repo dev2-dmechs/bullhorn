@@ -7,6 +7,7 @@ import {
   useCandidateSearch,
   useCategories,
   useCheckNewJobOrders,
+  useCompanies,
   useConnection,
   useCountries,
   useNewJobOrdersFeed,
@@ -116,6 +117,14 @@ const DEFAULT_COMPANY = "A";
 export default function Search() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const { data: companies } = useCompanies();
+  const companyNames = useMemo(
+    () => ({
+      ...COMPANY_LABELS,
+      ...Object.fromEntries((companies ?? []).map((c) => [c.id, c.name])),
+    }),
+    [companies],
+  );
 
   useEffect(() => {
     setCompanyId(getStoredCompany() ?? DEFAULT_COMPANY);
@@ -131,7 +140,7 @@ export default function Search() {
     const newLoggedInAs = otherCompany(newTargetCompanyId);
     setStoredCompany(newLoggedInAs);
     setCompanyId(newLoggedInAs);
-    setToast(`Logged in as ${COMPANY_LABELS[newLoggedInAs] ?? newLoggedInAs}`);
+    setToast(`Logged in as ${companyNames[newLoggedInAs] ?? newLoggedInAs}`);
   }
 
   if (!companyId) return null;
@@ -154,6 +163,7 @@ export default function Search() {
             />
             <TenantBadge
               targetCompanyId={targetCompanyId}
+              companyNames={companyNames}
               onSwitch={switchTargetCompany}
             />
           </div>
@@ -254,9 +264,11 @@ function CheckJobOrdersButton({
 
 function TenantBadge({
   targetCompanyId,
+  companyNames,
   onSwitch,
 }: {
   targetCompanyId: string;
+  companyNames: Record<string, string>;
   onSwitch: (targetCompanyId: string) => void;
 }) {
   const { data: connection, isLoading } = useConnection(targetCompanyId);
@@ -272,9 +284,9 @@ function TenantBadge({
           <SelectValue />
         </SelectTrigger>
         <SelectContent align="end">
-          {Object.entries(COMPANY_LABELS).map(([id, label]) => (
+          {Object.entries(COMPANY_LABELS).map(([id]) => (
             <SelectItem key={id} value={id}>
-              {label}
+              {companyNames[id] ?? id}
             </SelectItem>
           ))}
         </SelectContent>
@@ -738,6 +750,11 @@ function Results({
 }) {
   const [selected, setSelected] = useState<AnonymisedCandidate | null>(null);
   const [showExtraFields, setShowExtraFields] = useState(true);
+  const { data: companies } = useCompanies();
+  const companyNames = useMemo(
+    () => Object.fromEntries((companies ?? []).map((c) => [c.id, c.name])),
+    [companies],
+  );
 
   function selectCandidate(c: AnonymisedCandidate | null) {
     setSelected(c);
@@ -786,7 +803,7 @@ function Results({
           htmlFor="toggle-extra-fields"
           className="text-sm text-slate-500"
         >
-          Category / sector / CV on file
+          Candidate ID / company
         </label>
         <Switch
           id="toggle-extra-fields"
@@ -799,19 +816,18 @@ function Results({
           <table className="w-full text-left text-sm">
             <thead className="bg-brand-navy text-slate-200">
               <tr>
-                <th className="px-4 py-2 font-medium">Candidate ID</th>
+                {showExtraFields && (
+                  <th className="px-4 py-2 font-medium">Candidate ID</th>
+                )}
                 <th className="px-4 py-2 font-medium">Score</th>
                 <th className="px-4 py-2 font-medium">Title</th>
-                {showExtraFields && (
-                  <>
-                    <th className="px-4 py-2 font-medium">Category</th>
-                    <th className="px-4 py-2 font-medium">Business sector</th>
-                  </>
-                )}
+                <th className="px-4 py-2 font-medium">Category</th>
+                <th className="px-4 py-2 font-medium">Business sector</th>
                 <th className="px-4 py-2 font-medium">Owner</th>
                 {showExtraFields && (
-                  <th className="px-4 py-2 font-medium">CV on file</th>
+                  <th className="px-4 py-2 font-medium">Company</th>
                 )}
+                <th className="px-4 py-2 font-medium">CV on file</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -821,29 +837,32 @@ function Results({
                   onClick={() => selectCandidate(c)}
                   className="cursor-pointer transition hover:bg-brand-teal-light/60"
                 >
-                  <td className="px-4 py-2 text-slate-400">#{c.external_id}</td>
+                  {showExtraFields && (
+                    <td className="px-4 py-2 text-slate-400">
+                      #{c.external_id}
+                    </td>
+                  )}
                   <td className="px-4 py-2">
                     <ScoreBadge score={c.match?.score ?? null} />
                   </td>
                   <td className="px-4 py-2">{c.title ?? "—"}</td>
-                  {showExtraFields && (
-                    <>
-                      <td className="px-4 py-2">{c.category ?? "—"}</td>
-                      <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
-                    </>
-                  )}
+                  <td className="px-4 py-2">{c.category ?? "—"}</td>
+                  <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
                   <td className="px-4 py-2">{c.owner_name ?? "Unassigned"}</td>
                   {showExtraFields && (
                     <td className="px-4 py-2">
-                      {c.resume ? (
-                        <span className="inline-flex items-center rounded-full bg-brand-teal-light px-2 py-0.5 text-xs font-medium text-brand-teal-dark">
-                          Yes
-                        </span>
-                      ) : (
-                        <span className="text-slate-300">—</span>
-                      )}
+                      {companyNames[c.company_id] ?? c.company_id}
                     </td>
                   )}
+                  <td className="px-4 py-2">
+                    {c.resume ? (
+                      <span className="inline-flex items-center rounded-full bg-brand-teal-light px-2 py-0.5 text-xs font-medium text-brand-teal-dark">
+                        Yes
+                      </span>
+                    ) : (
+                      <span className="text-slate-300">—</span>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>

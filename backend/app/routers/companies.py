@@ -14,6 +14,7 @@ from app.schemas import (
     AddressSchema,
     BusinessSectorsSchema,
     CategorySchema,
+    CompanySchema,
     ConnectionRead,
     JobOrderSchema,
     TaxonomyOption,
@@ -35,6 +36,12 @@ async def _company(company_id: str, db: AsyncSession) -> Company:
     if company is None:
         raise HTTPException(status_code=404, detail="Company not found")
     return company
+
+
+@router.get("", response_model=list[CompanySchema])
+async def list_companies(db: AsyncSession = Depends(get_db)) -> list[CompanySchema]:
+    companies = await db.scalars(select(Company))
+    return [CompanySchema(id=c.id, name=c.name) for c in companies]
 
 
 @router.get("/{company_id}/connection", response_model=ConnectionRead)

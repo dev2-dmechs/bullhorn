@@ -4,6 +4,7 @@ import {
   checkNewJobOrders,
   getBusinessSectors,
   getCategories,
+  getCompanies,
   getConnection,
   getCountries,
   getNewJobOrders,
@@ -17,6 +18,13 @@ import {
 // app/routers/job_orders.py) — poll a bit more often so the UI picks up a fresh feed
 // shortly after the backend does, without hammering our own API.
 const JOB_ORDER_FEED_REFETCH_MS = 15_000;
+
+export function useCompanies() {
+  return useQuery({
+    queryKey: ["companies"],
+    queryFn: getCompanies,
+  });
+}
 
 export function useConnection(companyId: string) {
   return useQuery({

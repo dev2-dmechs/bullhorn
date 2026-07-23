@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import type {
   AnonymisedCandidate,
   CandidateSearchRequest,
@@ -8,15 +8,23 @@ import type {
 } from "@/api/client";
 import {
   useCandidateSearch,
+  useCompanies,
   useNewJobOrdersFeed,
   useStoredJobOrders,
   useSyncJobOrders,
 } from "@/api/hooks";
 import { CandidateDetailModal } from "@/components/CandidateDetailModal";
 import { ScoreBadge } from "@/components/MatchScore";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
-import { otherCompany } from "@/lib/companies";
-import { markJobOrdersSeen } from "@/lib/storage";
+import { COMPANY_LABELS, otherCompany } from "@/lib/companies";
+import { markJobOrdersSeen, setStoredCompany } from "@/lib/storage";
 
 function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -215,6 +223,11 @@ function CandidateResultsModal({
     null,
   );
   const [showExtraFields, setShowExtraFields] = useState(true);
+  const { data: companies } = useCompanies();
+  const companyNames = useMemo(
+    () => Object.fromEntries((companies ?? []).map((c) => [c.id, c.name])),
+    [companies],
+  );
 
   return (
     <div
@@ -245,7 +258,7 @@ function CandidateResultsModal({
                 htmlFor="toggle-extra-fields-jobs"
                 className="text-sm text-slate-500"
               >
-                Category / sector / CV on file
+                Candidate ID / company
               </label>
               <Switch
                 id="toggle-extra-fields-jobs"
@@ -262,21 +275,18 @@ function CandidateResultsModal({
             <table className="w-full text-left text-sm">
               <thead className="bg-brand-navy text-slate-200">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Candidate ID</th>
+                  {showExtraFields && (
+                    <th className="px-4 py-2 font-medium">Candidate ID</th>
+                  )}
                   <th className="px-4 py-2 font-medium">AI score</th>
                   <th className="px-4 py-2 font-medium">Title</th>
-                  {showExtraFields && (
-                    <>
-                      <th className="px-4 py-2 font-medium">Category</th>
-                      <th className="px-4 py-2 font-medium">
-                        Business sector
-                      </th>
-                    </>
-                  )}
+                  <th className="px-4 py-2 font-medium">Category</th>
+                  <th className="px-4 py-2 font-medium">Business sector</th>
                   <th className="px-4 py-2 font-medium">Owner</th>
                   {showExtraFields && (
-                    <th className="px-4 py-2 font-medium">CV on file</th>
+                    <th className="px-4 py-2 font-medium">Company</th>
                   )}
+                  <th className="px-4 py-2 font-medium">CV on file</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -286,27 +296,26 @@ function CandidateResultsModal({
                     onClick={() => setScoreDetail(c)}
                     className="cursor-pointer transition hover:bg-brand-teal-light/60"
                   >
-                    <td className="px-4 py-2 text-slate-400">
-                      #{c.external_id}
-                    </td>
+                    {showExtraFields && (
+                      <td className="px-4 py-2 text-slate-400">
+                        #{c.external_id}
+                      </td>
+                    )}
                     <td className="px-4 py-2">
                       <ScoreBadge score={c.match?.score ?? null} />
                     </td>
                     <td className="px-4 py-2">{c.title ?? "—"}</td>
-                    {showExtraFields && (
-                      <>
-                        <td className="px-4 py-2">{c.category ?? "—"}</td>
-                        <td className="px-4 py-2">
-                          {c.business_sector ?? "—"}
-                        </td>
-                      </>
-                    )}
+                    <td className="px-4 py-2">{c.category ?? "—"}</td>
+                    <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
                     <td className="px-4 py-2">
                       {c.owner_name ?? "Unassigned"}
                     </td>
                     {showExtraFields && (
-                      <td className="px-4 py-2">{c.resume ? "Yes" : "—"}</td>
+                      <td className="px-4 py-2">
+                        {companyNames[c.company_id] ?? c.company_id}
+                      </td>
                     )}
+                    <td className="px-4 py-2">{c.resume ? "Yes" : "—"}</td>
                   </tr>
                 ))}
               </tbody>
@@ -395,6 +404,7 @@ function SyncButton({ companyId }: { companyId: string }) {
 
 export default function Jobs() {
   const { companyId } = useParams<{ companyId: string }>();
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<JobOrderSchema | null>(null);
   const [candidateResults, setCandidateResults] = useState<{
     job: JobOrderSchema;
@@ -409,6 +419,19 @@ export default function Jobs() {
   );
   const candidatePoolCompanyId = otherCompany(companyId ?? "");
   const { data: newJobOrdersFeed } = useNewJobOrdersFeed(companyId ?? "");
+  const { data: allCompanies } = useCompanies();
+  const headerCompanyNames = useMemo(
+    () => ({
+      ...COMPANY_LABELS,
+      ...Object.fromEntries((allCompanies ?? []).map((c) => [c.id, c.name])),
+    }),
+    [allCompanies],
+  );
+
+  function switchCompany(newCompanyId: string) {
+    setStoredCompany(newCompanyId);
+    navigate(`/jobs/${newCompanyId}`);
+  }
 
   useEffect(() => {
     if (!toast) return;
@@ -437,7 +460,27 @@ export default function Jobs() {
             </Link>
             <h1 className="text-base font-semibold text-white">Job orders</h1>
           </div>
-          <SyncButton companyId={companyId ?? ""} />
+          <div className="flex items-center gap-3">
+            <SyncButton companyId={companyId ?? ""} />
+            <div className="inline-flex items-center gap-2.5 rounded-full bg-white/10 py-1 pl-3.5 pr-2.5 text-sm">
+              <span className="text-white/60">Company</span>
+              <Select value={companyId ?? ""} onValueChange={switchCompany}>
+                <SelectTrigger
+                  size="sm"
+                  className="h-6 gap-1 rounded-md border-0 bg-transparent px-1.5 text-sm font-semibold text-white shadow-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-0 data-placeholder:text-white [&_svg]:text-white/70"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {Object.entries(COMPANY_LABELS).map(([id]) => (
+                    <SelectItem key={id} value={id}>
+                      {headerCompanyNames[id] ?? id}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </header>
 

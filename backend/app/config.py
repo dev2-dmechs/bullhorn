@@ -29,11 +29,15 @@ class Settings(BaseSettings):
     bh_a_client_secret: str = ""
     bh_a_username: str = ""
     bh_a_password: str = ""
+    # Display name for tenant A — its real Bullhorn org name (e.g. "cmcpartners"), not
+    # the generic "Company A" placeholder. Seeded into the `companies` table at startup.
+    bh_a_name: str = "Company A"
 
     bh_b_client_id: str = ""
     bh_b_client_secret: str = ""
     bh_b_username: str = ""
     bh_b_password: str = ""
+    bh_b_name: str = "Company B"
 
     openai_api_key: str = ""
     openai_model: str = "gpt-5.6-sol"
@@ -48,6 +52,9 @@ class Settings(BaseSettings):
             auth_url=self.bullhorn_auth_url,
             login_url=self.bullhorn_login_url,
         )
+
+    def company_name_for(self, company_id: str) -> str:
+        return str(getattr(self, f"bh_{company_id.lower()}_name"))
 
 
 @lru_cache

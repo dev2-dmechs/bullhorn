@@ -14,6 +14,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return res.json() as Promise<T>;
 }
 
+export type CompanySchema = components["schemas"]["CompanySchema"];
 export type ConnectionRead = components["schemas"]["ConnectionRead"];
 export type CategorySchema = components["schemas"]["CategorySchema"];
 export type BusinessSectorsSchema = components["schemas"]["BusinessSectorsSchema"];
@@ -27,6 +28,10 @@ export type NewJobOrderCheckResponse = components["schemas"]["NewJobOrderCheckRe
 export type JobOrderFeedResponse = components["schemas"]["JobOrderFeedResponse"];
 export type JobOrderSyncResponse = components["schemas"]["JobOrderSyncResponse"];
 export type JobOrderSchema = components["schemas"]["JobOrderSchema"];
+
+export function getCompanies() {
+  return request<CompanySchema[]>("/companies");
+}
 
 export function getConnection(companyId: string) {
   return request<ConnectionRead>(`/companies/${companyId}/connection`);
