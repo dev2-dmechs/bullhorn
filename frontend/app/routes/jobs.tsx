@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { type MouseEvent, useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import type {
   AnonymisedCandidate,
   CandidateSearchRequest,
@@ -8,12 +8,23 @@ import type {
 } from "@/api/client";
 import {
   useCandidateSearch,
+  useCompanies,
+  useNewJobOrdersFeed,
   useStoredJobOrders,
   useSyncJobOrders,
 } from "@/api/hooks";
 import { CandidateDetailModal } from "@/components/CandidateDetailModal";
 import { ScoreBadge } from "@/components/MatchScore";
-import { otherCompany } from "@/lib/companies";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
+import { COMPANY_LABELS, otherCompany } from "@/lib/companies";
+import { markJobOrdersSeen, setStoredCompany } from "@/lib/storage";
 
 function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -211,6 +222,12 @@ function CandidateResultsModal({
   const [scoreDetail, setScoreDetail] = useState<AnonymisedCandidate | null>(
     null,
   );
+  const [showExtraFields, setShowExtraFields] = useState(true);
+  const { data: companies } = useCompanies();
+  const companyNames = useMemo(
+    () => Object.fromEntries((companies ?? []).map((c) => [c.id, c.name])),
+    [companies],
+  );
 
   return (
     <div
@@ -235,6 +252,21 @@ function CandidateResultsModal({
           </button>
         </div>
         <div className="px-6 py-6">
+          {candidates.length > 0 && (
+            <div className="mb-3 flex items-center justify-end gap-2">
+              <label
+                htmlFor="toggle-extra-fields-jobs"
+                className="text-sm text-slate-500"
+              >
+                Candidate ID / company
+              </label>
+              <Switch
+                id="toggle-extra-fields-jobs"
+                checked={showExtraFields}
+                onCheckedChange={setShowExtraFields}
+              />
+            </div>
+          )}
           {candidates.length === 0 ? (
             <p className="text-sm text-slate-400">
               No candidates matched this job's category/skills/sector/title.
@@ -243,13 +275,17 @@ function CandidateResultsModal({
             <table className="w-full text-left text-sm">
               <thead className="bg-brand-navy text-slate-200">
                 <tr>
-                  <th className="px-4 py-2 font-medium">Candidate ID</th>
+                  {showExtraFields && (
+                    <th className="px-4 py-2 font-medium">Candidate ID</th>
+                  )}
                   <th className="px-4 py-2 font-medium">AI score</th>
                   <th className="px-4 py-2 font-medium">Title</th>
                   <th className="px-4 py-2 font-medium">Category</th>
                   <th className="px-4 py-2 font-medium">Business sector</th>
                   <th className="px-4 py-2 font-medium">Owner</th>
-                  <th className="px-4 py-2 font-medium">Owning company</th>
+                  {showExtraFields && (
+                    <th className="px-4 py-2 font-medium">Company</th>
+                  )}
                   <th className="px-4 py-2 font-medium">CV on file</th>
                 </tr>
               </thead>
@@ -260,9 +296,11 @@ function CandidateResultsModal({
                     onClick={() => setScoreDetail(c)}
                     className="cursor-pointer transition hover:bg-brand-teal-light/60"
                   >
-                    <td className="px-4 py-2 text-slate-400">
-                      #{c.external_id}
-                    </td>
+                    {showExtraFields && (
+                      <td className="px-4 py-2 text-slate-400">
+                        #{c.external_id}
+                      </td>
+                    )}
                     <td className="px-4 py-2">
                       <ScoreBadge score={c.match?.score ?? null} />
                     </td>
@@ -272,7 +310,11 @@ function CandidateResultsModal({
                     <td className="px-4 py-2">
                       {c.owner_name ?? "Unassigned"}
                     </td>
-                    <td className="px-4 py-2">{c.company_id}</td>
+                    {showExtraFields && (
+                      <td className="px-4 py-2">
+                        {companyNames[c.company_id] ?? c.company_id}
+                      </td>
+                    )}
                     <td className="px-4 py-2">{c.resume ? "Yes" : "—"}</td>
                   </tr>
                 ))}
@@ -362,6 +404,7 @@ function SyncButton({ companyId }: { companyId: string }) {
 
 export default function Jobs() {
   const { companyId } = useParams<{ companyId: string }>();
+  const navigate = useNavigate();
   const [selected, setSelected] = useState<JobOrderSchema | null>(null);
   const [candidateResults, setCandidateResults] = useState<{
     job: JobOrderSchema;
@@ -375,12 +418,36 @@ export default function Jobs() {
     [data],
   );
   const candidatePoolCompanyId = otherCompany(companyId ?? "");
+  const { data: newJobOrdersFeed } = useNewJobOrdersFeed(companyId ?? "");
+  const { data: allCompanies } = useCompanies();
+  const headerCompanyNames = useMemo(
+    () => ({
+      ...COMPANY_LABELS,
+      ...Object.fromEntries((allCompanies ?? []).map((c) => [c.id, c.name])),
+    }),
+    [allCompanies],
+  );
+
+  function switchCompany(newCompanyId: string) {
+    setStoredCompany(newCompanyId);
+    navigate(`/jobs/${newCompanyId}`);
+  }
 
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!companyId || !newJobOrdersFeed) return;
+    markJobOrdersSeen(
+      companyId,
+      newJobOrdersFeed.jobs.map((j) => j.id),
+    );
+  }, [companyId, newJobOrdersFeed]);
+
+  const targetCompanyId = otherCompany(companyId);
 
   return (
     <div className="min-h-screen">
@@ -395,7 +462,30 @@ export default function Jobs() {
             </Link>
             <h1 className="text-base font-semibold text-white">Job orders</h1>
           </div>
-          <SyncButton companyId={companyId ?? ""} />
+          <div className="flex items-center gap-3">
+            <SyncButton companyId={companyId ?? ""} />
+            <div className="inline-flex items-center gap-2.5 rounded-full bg-white/10 py-1 pl-3.5 pr-2.5 text-sm">
+              <span className="text-white/60">Searching</span>
+              <Select
+                value={targetCompanyId ?? ""}
+                onValueChange={switchCompany}
+              >
+                <SelectTrigger
+                  size="sm"
+                  className="h-6 gap-1 rounded-md border-0 bg-transparent px-1.5 text-sm font-semibold text-white shadow-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-0 data-placeholder:text-white [&_svg]:text-white/70"
+                >
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent align="end">
+                  {Object.entries(COMPANY_LABELS).map(([id]) => (
+                    <SelectItem key={id} value={id}>
+                      {id ?? headerCompanyNames[id]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
         </div>
       </header>
 

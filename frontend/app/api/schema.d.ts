@@ -4,6 +4,23 @@
  */
 
 export interface paths {
+    "/companies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Companies */
+        get: operations["list_companies_companies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/companies/{company_id}/connection": {
         parameters: {
             query?: never;
@@ -255,10 +272,7 @@ export interface components {
             /** Date Added */
             date_added: string | null;
         };
-        /**
-         * CandidateMatch
-         * @description `MatchScore` minus `candidate_id` — already keyed onto its `AnonymisedCandidate`.
-         */
+        /** CandidateMatch */
         CandidateMatch: {
             /** Score */
             score: number;
@@ -271,15 +285,7 @@ export interface components {
             /** Reasons */
             reasons: string[];
         };
-        /**
-         * CandidateResume
-         * @description The identity reveal. The candidate's CV is fetched and parsed live via Bullhorn's
-         *     résumé parser as part of the search response, never persisted (rule 1) and never
-         *     logged (rule 4). Deliberately its own nested type: this is the one point where PII is
-         *     allowed to leave, as a business decision, not the default shape of a candidate
-         *     response. `parsed` is Bullhorn's own structured-candidate output — shape is whatever
-         *     their parser returns, not remodelled here, since exact fields vary by resume.
-         */
+        /** CandidateResume */
         CandidateResume: {
             /** File Name */
             file_name: string;
@@ -347,6 +353,13 @@ export interface components {
             /** Occupation */
             occupation: string | null;
         };
+        /** CompanySchema */
+        CompanySchema: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+        };
         /** ConnectionRead */
         ConnectionRead: {
             /** Company Id */
@@ -367,11 +380,7 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
-        /**
-         * JobOrderFeedResponse
-         * @description The accumulating feed of newly-detected job orders for one tenant, populated by
-         *     the background poller. In-memory only — see app/routers/job_orders.py.
-         */
+        /** JobOrderFeedResponse */
         JobOrderFeedResponse: {
             /** Company Id */
             company_id: string;
@@ -543,13 +552,7 @@ export interface components {
             /** Jobs */
             jobs: components["schemas"]["JobOrderSchema"][];
         };
-        /**
-         * NewJobOrderCheckResponse
-         * @description Result of one on-demand "check for new job orders" poll against one tenant.
-         *     Detection only — these jobs are not matched/scored against candidates yet.
-         *     `checked_count` is the number of INSERTED JobOrder events drained from Bullhorn's
-         *     Entity Events subscription this call, not a tenant-wide total.
-         */
+        /** NewJobOrderCheckResponse */
         NewJobOrderCheckResponse: {
             /** Company Id */
             company_id: string;
@@ -587,6 +590,26 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    list_companies_companies_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CompanySchema"][];
+                };
+            };
+        };
+    };
     check_connection_companies__company_id__connection_get: {
         parameters: {
             query?: never;

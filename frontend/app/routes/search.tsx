@@ -7,6 +7,7 @@ import {
   useCandidateSearch,
   useCategories,
   useCheckNewJobOrders,
+  useCompanies,
   useConnection,
   useCountries,
   useNewJobOrdersFeed,
@@ -20,11 +21,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { CandidateDetailModal } from "@/components/CandidateDetailModal";
 import { ScoreBadge } from "@/components/MatchScore";
 import { StatusDot } from "@/components/StatusDot";
 import { COMPANY_LABELS, otherCompany } from "@/lib/companies";
-import { getStoredCompany, setStoredCompany } from "@/lib/storage";
+import {
+  getSeenJobOrderIds,
+  getStoredCompany,
+  setStoredCompany,
+} from "@/lib/storage";
 
 function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -111,6 +117,14 @@ const DEFAULT_COMPANY = "A";
 export default function Search() {
   const [companyId, setCompanyId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const { data: companies } = useCompanies();
+  const companyNames = useMemo(
+    () => ({
+      ...COMPANY_LABELS,
+      ...Object.fromEntries((companies ?? []).map((c) => [c.id, c.name])),
+    }),
+    [companies],
+  );
 
   useEffect(() => {
     setCompanyId(getStoredCompany() ?? DEFAULT_COMPANY);
@@ -126,7 +140,7 @@ export default function Search() {
     const newLoggedInAs = otherCompany(newTargetCompanyId);
     setStoredCompany(newLoggedInAs);
     setCompanyId(newLoggedInAs);
-    setToast(`Logged in as ${COMPANY_LABELS[newLoggedInAs] ?? newLoggedInAs}`);
+    setToast(`Logged in as ${companyNames[newLoggedInAs] ?? newLoggedInAs}`);
   }
 
   if (!companyId) return null;
@@ -149,6 +163,7 @@ export default function Search() {
             />
             <TenantBadge
               targetCompanyId={targetCompanyId}
+              companyNames={companyNames}
               onSwitch={switchTargetCompany}
             />
           </div>
@@ -189,7 +204,8 @@ function JobOrderPollingControls({
 
 function NewJobOrdersLink({ companyId }: { companyId: string }) {
   const { data } = useNewJobOrdersFeed(companyId);
-  const count = data?.jobs.length ?? 0;
+  const seenIds = getSeenJobOrderIds(companyId);
+  const count = data?.jobs.filter((j) => !seenIds.has(j.id)).length ?? 0;
 
   return (
     <Link
@@ -248,9 +264,11 @@ function CheckJobOrdersButton({
 
 function TenantBadge({
   targetCompanyId,
+  companyNames,
   onSwitch,
 }: {
   targetCompanyId: string;
+  companyNames: Record<string, string>;
   onSwitch: (targetCompanyId: string) => void;
 }) {
   const { data: connection, isLoading } = useConnection(targetCompanyId);
@@ -266,9 +284,9 @@ function TenantBadge({
           <SelectValue />
         </SelectTrigger>
         <SelectContent align="end">
-          {Object.entries(COMPANY_LABELS).map(([id, label]) => (
+          {Object.entries(COMPANY_LABELS).map(([id]) => (
             <SelectItem key={id} value={id}>
-              {label}
+              {id ?? companyNames[id]}
             </SelectItem>
           ))}
         </SelectContent>
@@ -731,6 +749,12 @@ function Results({
   };
 }) {
   const [selected, setSelected] = useState<AnonymisedCandidate | null>(null);
+  const [showExtraFields, setShowExtraFields] = useState(true);
+  const { data: companies } = useCompanies();
+  const companyNames = useMemo(
+    () => Object.fromEntries((companies ?? []).map((c) => [c.id, c.name])),
+    [companies],
+  );
 
   function selectCandidate(c: AnonymisedCandidate | null) {
     setSelected(c);
@@ -774,17 +798,32 @@ function Results({
           </span>
         )}
       </div>
+      <div className="mx-auto mb-3 flex w-full max-w-360 items-center justify-end gap-2">
+        <label htmlFor="toggle-extra-fields" className="text-sm text-slate-500">
+          Candidate ID / company
+        </label>
+        <Switch
+          id="toggle-extra-fields"
+          checked={showExtraFields}
+          onCheckedChange={setShowExtraFields}
+        />
+      </div>
       <div className="mx-auto w-full max-w-360 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-brand-navy text-slate-200">
               <tr>
-                <th className="px-4 py-2 font-medium">Candidate ID</th>
+                {showExtraFields && (
+                  <th className="px-4 py-2 font-medium">Candidate ID</th>
+                )}
                 <th className="px-4 py-2 font-medium">Score</th>
                 <th className="px-4 py-2 font-medium">Title</th>
                 <th className="px-4 py-2 font-medium">Category</th>
                 <th className="px-4 py-2 font-medium">Business sector</th>
                 <th className="px-4 py-2 font-medium">Owner</th>
+                {showExtraFields && (
+                  <th className="px-4 py-2 font-medium">Company</th>
+                )}
                 <th className="px-4 py-2 font-medium">CV on file</th>
               </tr>
             </thead>
@@ -795,7 +834,11 @@ function Results({
                   onClick={() => selectCandidate(c)}
                   className="cursor-pointer transition hover:bg-brand-teal-light/60"
                 >
-                  <td className="px-4 py-2 text-slate-400">#{c.external_id}</td>
+                  {showExtraFields && (
+                    <td className="px-4 py-2 text-slate-400">
+                      #{c.external_id}
+                    </td>
+                  )}
                   <td className="px-4 py-2">
                     <ScoreBadge score={c.match?.score ?? null} />
                   </td>
@@ -803,6 +846,11 @@ function Results({
                   <td className="px-4 py-2">{c.category ?? "—"}</td>
                   <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
                   <td className="px-4 py-2">{c.owner_name ?? "Unassigned"}</td>
+                  {showExtraFields && (
+                    <td className="px-4 py-2">
+                      {companyNames[c.company_id] ?? c.company_id}
+                    </td>
+                  )}
                   <td className="px-4 py-2">
                     {c.resume ? (
                       <span className="inline-flex items-center rounded-full bg-brand-teal-light px-2 py-0.5 text-xs font-medium text-brand-teal-dark">
