@@ -286,7 +286,7 @@ function TenantBadge({
         <SelectContent align="end">
           {Object.entries(COMPANY_LABELS).map(([id]) => (
             <SelectItem key={id} value={id}>
-              {companyNames[id] ?? id}
+              {id ?? companyNames[id]}
             </SelectItem>
           ))}
         </SelectContent>
@@ -799,10 +799,7 @@ function Results({
         )}
       </div>
       <div className="mx-auto mb-3 flex w-full max-w-360 items-center justify-end gap-2">
-        <label
-          htmlFor="toggle-extra-fields"
-          className="text-sm text-slate-500"
-        >
+        <label htmlFor="toggle-extra-fields" className="text-sm text-slate-500">
           Candidate ID / company
         </label>
         <Switch

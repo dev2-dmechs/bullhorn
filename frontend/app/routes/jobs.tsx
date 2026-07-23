@@ -447,6 +447,8 @@ export default function Jobs() {
     );
   }, [companyId, newJobOrdersFeed]);
 
+  const targetCompanyId = otherCompany(companyId);
+
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 bg-brand-navy px-6 py-3 shadow-md">
@@ -463,8 +465,11 @@ export default function Jobs() {
           <div className="flex items-center gap-3">
             <SyncButton companyId={companyId ?? ""} />
             <div className="inline-flex items-center gap-2.5 rounded-full bg-white/10 py-1 pl-3.5 pr-2.5 text-sm">
-              <span className="text-white/60">Company</span>
-              <Select value={companyId ?? ""} onValueChange={switchCompany}>
+              <span className="text-white/60">Searching</span>
+              <Select
+                value={targetCompanyId ?? ""}
+                onValueChange={switchCompany}
+              >
                 <SelectTrigger
                   size="sm"
                   className="h-6 gap-1 rounded-md border-0 bg-transparent px-1.5 text-sm font-semibold text-white shadow-none hover:bg-white/10 focus-visible:ring-2 focus-visible:ring-white/40 focus-visible:ring-offset-0 data-placeholder:text-white [&_svg]:text-white/70"
@@ -474,7 +479,7 @@ export default function Jobs() {
                 <SelectContent align="end">
                   {Object.entries(COMPANY_LABELS).map(([id]) => (
                     <SelectItem key={id} value={id}>
-                      {headerCompanyNames[id] ?? id}
+                      {id ?? headerCompanyNames[id]}
                     </SelectItem>
                   ))}
                 </SelectContent>
