@@ -20,11 +20,16 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Switch } from "@/components/ui/switch";
 import { CandidateDetailModal } from "@/components/CandidateDetailModal";
 import { ScoreBadge } from "@/components/MatchScore";
 import { StatusDot } from "@/components/StatusDot";
 import { COMPANY_LABELS, otherCompany } from "@/lib/companies";
-import { getStoredCompany, setStoredCompany } from "@/lib/storage";
+import {
+  getSeenJobOrderIds,
+  getStoredCompany,
+  setStoredCompany,
+} from "@/lib/storage";
 
 function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -189,7 +194,8 @@ function JobOrderPollingControls({
 
 function NewJobOrdersLink({ companyId }: { companyId: string }) {
   const { data } = useNewJobOrdersFeed(companyId);
-  const count = data?.jobs.length ?? 0;
+  const seenIds = getSeenJobOrderIds(companyId);
+  const count = data?.jobs.filter((j) => !seenIds.has(j.id)).length ?? 0;
 
   return (
     <Link
@@ -731,6 +737,7 @@ function Results({
   };
 }) {
   const [selected, setSelected] = useState<AnonymisedCandidate | null>(null);
+  const [showExtraFields, setShowExtraFields] = useState(true);
 
   function selectCandidate(c: AnonymisedCandidate | null) {
     setSelected(c);
@@ -774,6 +781,19 @@ function Results({
           </span>
         )}
       </div>
+      <div className="mx-auto mb-3 flex w-full max-w-360 items-center justify-end gap-2">
+        <label
+          htmlFor="toggle-extra-fields"
+          className="text-sm text-slate-500"
+        >
+          Category / sector / CV on file
+        </label>
+        <Switch
+          id="toggle-extra-fields"
+          checked={showExtraFields}
+          onCheckedChange={setShowExtraFields}
+        />
+      </div>
       <div className="mx-auto w-full max-w-360 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
@@ -782,10 +802,16 @@ function Results({
                 <th className="px-4 py-2 font-medium">Candidate ID</th>
                 <th className="px-4 py-2 font-medium">Score</th>
                 <th className="px-4 py-2 font-medium">Title</th>
-                <th className="px-4 py-2 font-medium">Category</th>
-                <th className="px-4 py-2 font-medium">Business sector</th>
+                {showExtraFields && (
+                  <>
+                    <th className="px-4 py-2 font-medium">Category</th>
+                    <th className="px-4 py-2 font-medium">Business sector</th>
+                  </>
+                )}
                 <th className="px-4 py-2 font-medium">Owner</th>
-                <th className="px-4 py-2 font-medium">CV on file</th>
+                {showExtraFields && (
+                  <th className="px-4 py-2 font-medium">CV on file</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
@@ -800,18 +826,24 @@ function Results({
                     <ScoreBadge score={c.match?.score ?? null} />
                   </td>
                   <td className="px-4 py-2">{c.title ?? "—"}</td>
-                  <td className="px-4 py-2">{c.category ?? "—"}</td>
-                  <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
+                  {showExtraFields && (
+                    <>
+                      <td className="px-4 py-2">{c.category ?? "—"}</td>
+                      <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
+                    </>
+                  )}
                   <td className="px-4 py-2">{c.owner_name ?? "Unassigned"}</td>
-                  <td className="px-4 py-2">
-                    {c.resume ? (
-                      <span className="inline-flex items-center rounded-full bg-brand-teal-light px-2 py-0.5 text-xs font-medium text-brand-teal-dark">
-                        Yes
-                      </span>
-                    ) : (
-                      <span className="text-slate-300">—</span>
-                    )}
-                  </td>
+                  {showExtraFields && (
+                    <td className="px-4 py-2">
+                      {c.resume ? (
+                        <span className="inline-flex items-center rounded-full bg-brand-teal-light px-2 py-0.5 text-xs font-medium text-brand-teal-dark">
+                          Yes
+                        </span>
+                      ) : (
+                        <span className="text-slate-300">—</span>
+                      )}
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

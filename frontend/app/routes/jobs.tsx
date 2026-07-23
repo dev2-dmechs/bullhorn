@@ -8,12 +8,15 @@ import type {
 } from "@/api/client";
 import {
   useCandidateSearch,
+  useNewJobOrdersFeed,
   useStoredJobOrders,
   useSyncJobOrders,
 } from "@/api/hooks";
 import { CandidateDetailModal } from "@/components/CandidateDetailModal";
 import { ScoreBadge } from "@/components/MatchScore";
+import { Switch } from "@/components/ui/switch";
 import { otherCompany } from "@/lib/companies";
+import { markJobOrdersSeen } from "@/lib/storage";
 
 function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -211,6 +214,7 @@ function CandidateResultsModal({
   const [scoreDetail, setScoreDetail] = useState<AnonymisedCandidate | null>(
     null,
   );
+  const [showExtraFields, setShowExtraFields] = useState(true);
 
   return (
     <div
@@ -235,6 +239,21 @@ function CandidateResultsModal({
           </button>
         </div>
         <div className="px-6 py-6">
+          {candidates.length > 0 && (
+            <div className="mb-3 flex items-center justify-end gap-2">
+              <label
+                htmlFor="toggle-extra-fields-jobs"
+                className="text-sm text-slate-500"
+              >
+                Category / sector / CV on file
+              </label>
+              <Switch
+                id="toggle-extra-fields-jobs"
+                checked={showExtraFields}
+                onCheckedChange={setShowExtraFields}
+              />
+            </div>
+          )}
           {candidates.length === 0 ? (
             <p className="text-sm text-slate-400">
               No candidates matched this job's category/skills/sector/title.
@@ -246,11 +265,18 @@ function CandidateResultsModal({
                   <th className="px-4 py-2 font-medium">Candidate ID</th>
                   <th className="px-4 py-2 font-medium">AI score</th>
                   <th className="px-4 py-2 font-medium">Title</th>
-                  <th className="px-4 py-2 font-medium">Category</th>
-                  <th className="px-4 py-2 font-medium">Business sector</th>
+                  {showExtraFields && (
+                    <>
+                      <th className="px-4 py-2 font-medium">Category</th>
+                      <th className="px-4 py-2 font-medium">
+                        Business sector
+                      </th>
+                    </>
+                  )}
                   <th className="px-4 py-2 font-medium">Owner</th>
-                  <th className="px-4 py-2 font-medium">Owning company</th>
-                  <th className="px-4 py-2 font-medium">CV on file</th>
+                  {showExtraFields && (
+                    <th className="px-4 py-2 font-medium">CV on file</th>
+                  )}
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100">
@@ -267,13 +293,20 @@ function CandidateResultsModal({
                       <ScoreBadge score={c.match?.score ?? null} />
                     </td>
                     <td className="px-4 py-2">{c.title ?? "—"}</td>
-                    <td className="px-4 py-2">{c.category ?? "—"}</td>
-                    <td className="px-4 py-2">{c.business_sector ?? "—"}</td>
+                    {showExtraFields && (
+                      <>
+                        <td className="px-4 py-2">{c.category ?? "—"}</td>
+                        <td className="px-4 py-2">
+                          {c.business_sector ?? "—"}
+                        </td>
+                      </>
+                    )}
                     <td className="px-4 py-2">
                       {c.owner_name ?? "Unassigned"}
                     </td>
-                    <td className="px-4 py-2">{c.company_id}</td>
-                    <td className="px-4 py-2">{c.resume ? "Yes" : "—"}</td>
+                    {showExtraFields && (
+                      <td className="px-4 py-2">{c.resume ? "Yes" : "—"}</td>
+                    )}
                   </tr>
                 ))}
               </tbody>
@@ -375,12 +408,21 @@ export default function Jobs() {
     [data],
   );
   const candidatePoolCompanyId = otherCompany(companyId ?? "");
+  const { data: newJobOrdersFeed } = useNewJobOrdersFeed(companyId ?? "");
 
   useEffect(() => {
     if (!toast) return;
     const timer = setTimeout(() => setToast(null), 3000);
     return () => clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!companyId || !newJobOrdersFeed) return;
+    markJobOrdersSeen(
+      companyId,
+      newJobOrdersFeed.jobs.map((j) => j.id),
+    );
+  }, [companyId, newJobOrdersFeed]);
 
   return (
     <div className="min-h-screen">
