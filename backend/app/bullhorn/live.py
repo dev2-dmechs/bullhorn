@@ -1,3 +1,4 @@
+import asyncio
 import logging
 from datetime import UTC, datetime
 from typing import Any
@@ -55,20 +56,6 @@ JOB_ORDER_FIELDS = (
     "publishedCategory(id,name),categories(id,name),businessSectors(id,name),"
     "skills(id,name),specialties(id,name)"
 )
-# Fields excluded above because this tenant 400s "Invalid field" on them (not licensed/
-# enabled here, discovered by testing live): billingProfile, clientCorporationLine,
-# jobCode, jobOrderIntegrations, jobShifts.
-# Every other to-many association (appointments, approvedPlacements, assignedUsers,
-# certificationGroups, certifications, fileAttachments, interviews,
-# jobOrderScreenerQuestions, notes, placements, sendouts, shifts, submissions, tasks,
-# timeUnits, webResponses) was dropped deliberately, not just for noise: Bullhorn silently
-# caps `count` on /query/JobOrder as more to-many associations are requested — confirmed
-# live at roughly floor(200 / num_to_many_associations), e.g. 20 associations capped a
-# requested count=100 down to 10 with no error. Keeping only the four associations the
-# app actually displays (categories, businessSectors, skills, specialties) raises that
-# ceiling to ~50 (floor(200/4)) — accepted tradeoff, confirmed 2026-07-23. MAX_JOB_ORDERS
-# below is our own API's upper bound on the `count` query param; it does NOT reflect this
-# Bullhorn-side cap, so a caller can request e.g. count=100 and still only get 50 back.
 
 
 class BullhornAuthError(RuntimeError):
@@ -97,10 +84,12 @@ class LiveBullhornClient:
     def __init__(self, company_id: str, db: AsyncSession) -> None:
         self.company_id = company_id
         self.db = db
+        self._db_lock = asyncio.Lock()
         self.creds: TenantCredentials = get_settings().credentials_for(company_id)
 
     async def _company(self) -> Company:
-        company = await self.db.scalar(select(Company).where(Company.id == self.company_id))
+        async with self._db_lock:
+            company = await self.db.scalar(select(Company).where(Company.id == self.company_id))
         if company is None:
             raise BullhornAuthError(f"Company {self.company_id} is not seeded")
         return company
@@ -185,7 +174,8 @@ class LiveBullhornClient:
         company.bh_rest_token = bh_rest_token
         company.rest_url = rest_url
         company.token_updated_at = datetime.now(UTC)
-        await self.db.commit()
+        async with self._db_lock:
+            await self.db.commit()
 
         log.info("Bullhorn login succeeded for company %s", self.company_id)
         return str(bh_rest_token), str(rest_url)
@@ -302,6 +292,8 @@ class LiveBullhornClient:
     ) -> tuple[list[dict[str, Any]], int]:
         limit = min(limit, MAX_CANDIDATES)
         clauses = []
+
+        print("category_ids *************** : ", category_ids)
         if category_ids:
             clauses.append(f"categories.id:({' OR '.join(str(i) for i in category_ids)})")
         if skill_ids:
@@ -448,11 +440,11 @@ class LiveBullhornClient:
         events: list[dict[str, Any]] = payload.get("events", [])
         print("poll_job_order_events:")
         print(events)
-        # return events
+
         return [
             int(e["entityId"])
             for e in events
-            if e.get("entityName") == "JobOrder" and e.get("eventType") == "INSERTED"
+            if e.get("entityName") == "JobOrder" and e.get("entityEventType") == "INSERTED"
         ]
 
     async def list_job_orders_by_ids(self, ids: list[int]) -> list[dict[str, Any]]:

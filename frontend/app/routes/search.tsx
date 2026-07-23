@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
-import type { AnonymisedCandidate, CandidateMatch } from "@/api/client";
+import type { AnonymisedCandidate } from "@/api/client";
 import {
   useBusinessSectors,
   useCandidateSearch,
@@ -20,59 +20,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { CandidateDetailModal } from "@/components/CandidateDetailModal";
+import { ScoreBadge } from "@/components/MatchScore";
 import { StatusDot } from "@/components/StatusDot";
 import { COMPANY_LABELS, otherCompany } from "@/lib/companies";
 import { getStoredCompany, setStoredCompany } from "@/lib/storage";
-
-// Light background + dark text for every tier — reliable ~5-9:1 contrast regardless
-// of hue, unlike solid-color-plus-white-text which measured as low as ~1.76:1 on the
-// green-400 tier.
-function scoreColorClasses(score: number): string {
-  if (score >= 80) return "border-transparent bg-green-200 text-green-900";
-  if (score >= 65) return "border-transparent bg-green-100 text-green-700";
-  if (score >= 50) return "border-transparent bg-yellow-100 text-yellow-800";
-  return "border-transparent bg-red-100 text-red-800";
-}
-
-function ScoreBadge({ score }: { score: number | null }) {
-  if (score === null) {
-    return <span className="text-slate-300">—</span>;
-  }
-  return (
-    <Badge className={`font-bold ${scoreColorClasses(score)}`}>{score}</Badge>
-  );
-}
-
-function subScoresOf(match: CandidateMatch): [string, number][] {
-  return [
-    ["Skills", match.skills_score],
-    ["Experience", match.experience_score],
-    ["Fit", match.fit_score],
-  ];
-}
-
-function MatchBreakdown({ match }: { match: CandidateMatch }) {
-  return (
-    <div className="border-t border-slate-200 px-6 py-4">
-      <div className="mb-3 flex items-center gap-3">
-        <span className="text-xs font-semibold uppercase tracking-wide text-slate-400">
-          AI match score
-        </span>
-        <ScoreBadge score={match.score} />
-      </div>
-      {match.reasons.length > 0 && (
-        <ul className="space-y-1 text-sm text-slate-600">
-          {match.reasons.map((reason) => (
-            <li key={reason} className="flex gap-2">
-              <span className="text-brand-teal">•</span>
-              {reason}
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
-}
 
 function Spinner({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -184,7 +136,7 @@ export default function Search() {
   return (
     <div className="min-h-screen">
       <header className="sticky top-0 z-20 bg-brand-navy px-6 py-3 shadow-md">
-        <div className="mx-auto flex max-w-7xl items-center justify-between">
+        <div className="mx-auto flex w-full max-w-360 items-center justify-between">
           <div className="flex items-center gap-2.5">
             <h1 className="text-base font-semibold text-white">
               Bullhorn Cross-Company Search
@@ -203,7 +155,7 @@ export default function Search() {
         </div>
       </header>
 
-      <div className="mx-auto max-w-7xl px-6 py-8">
+      <div className="w-full px-6 py-8">
         <SearchPanel companyId={targetCompanyId} />
       </div>
 
@@ -460,7 +412,7 @@ function SearchPanel({ companyId }: { companyId: string }) {
         )}
 
         {filtersOpen && (
-          <div className="absolute inset-x-0 top-0 z-20 animate-[panel-in_0.15s_ease-out] overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-slate-200">
+          <div className="absolute inset-x-0 top-0 z-20 mx-auto w-full max-w-360 animate-[panel-in_0.15s_ease-out] overflow-hidden rounded-xl bg-white shadow-2xl ring-1 ring-slate-200">
             <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
               <span className="text-sm font-semibold text-brand-navy">
                 Search filters
@@ -593,7 +545,7 @@ function SearchPanel({ companyId }: { companyId: string }) {
 
       <div ref={resultsRef} className="scroll-mt-20">
         {!search.data && !search.isPending && (
-          <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
+          <div className="mx-auto flex w-full max-w-360 flex-col items-center gap-4 rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
             <p className="text-sm text-slate-400">
               Choose filters above, then search to see matching candidates.
             </p>
@@ -794,7 +746,7 @@ function Results({
 
   if (data.candidates.length === 0) {
     return (
-      <div className="animate-[panel-in_0.15s_ease-out] rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
+      <div className="mx-auto w-full max-w-360 animate-[panel-in_0.15s_ease-out] rounded-xl border border-dashed border-slate-300 bg-white px-6 py-10 text-center">
         <p className="text-sm font-medium text-brand-navy">
           No candidates matched
         </p>
@@ -808,7 +760,7 @@ function Results({
 
   return (
     <div className="animate-[panel-in_0.15s_ease-out]">
-      <div className="mb-3 flex items-center justify-between">
+      <div className="mx-auto mb-3 flex w-full max-w-360 items-center justify-between">
         <p className="text-sm text-slate-500">
           <span className="font-semibold text-brand-navy">
             {data.total_count}
@@ -822,7 +774,7 @@ function Results({
           </span>
         )}
       </div>
-      <div className="overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
+      <div className="mx-auto w-full max-w-360 overflow-hidden rounded-lg border border-slate-200 bg-white shadow-sm">
         <div className="overflow-x-auto">
           <table className="w-full text-left text-sm">
             <thead className="bg-brand-navy text-slate-200">
@@ -868,71 +820,11 @@ function Results({
       </div>
 
       {selected && (
-        <div
-          className="fixed inset-0 z-40 flex items-center justify-center bg-brand-navy/30 p-4"
-          onClick={() => selectCandidate(null)}
-        >
-          <div
-            onClick={(e) => e.stopPropagation()}
-            className="flex max-h-[90vh] w-full max-w-2xl flex-col animate-[panel-in_0.15s_ease-out] overflow-y-auto rounded-xl bg-white shadow-2xl"
-          >
-            <div className="flex items-center justify-between gap-3 border-b border-slate-200 px-6 py-4">
-              <span className="text-sm font-semibold text-brand-navy">
-                Candidate #{selected.external_id}
-              </span>
-              <button
-                type="button"
-                onClick={() => selectCandidate(null)}
-                aria-label="Close"
-                className="text-slate-400 transition hover:text-brand-navy"
-              >
-                <CloseIcon />
-              </button>
-            </div>
-
-            <dl className="space-y-4 px-6 py-6 text-sm">
-              <DetailRow label="Title" value={selected.title} />
-              <DetailRow label="Category" value={selected.category} />
-              <DetailRow
-                label="Business sector"
-                value={selected.business_sector}
-              />
-              <DetailRow
-                label="Owner"
-                value={selected.owner_name ?? "Unassigned"}
-              />
-              <DetailRow label="Owning company" value={selected.company_id} />
-              <DetailRow
-                label="CV on file"
-                value={selected.resume ? "Yes" : "No"}
-              />
-              {selected.match && (
-                <div className="flex items-center justify-between gap-4">
-                  <dt className="text-slate-500">Match breakdown</dt>
-                  <dd className="flex gap-2">
-                    {subScoresOf(selected.match).map(([label, value]) => (
-                      <Badge key={label} className="gap-1 font-bold">
-                        {label} {value}
-                      </Badge>
-                    ))}
-                  </dd>
-                </div>
-              )}
-            </dl>
-
-            {selected.match && <MatchBreakdown match={selected.match} />}
-          </div>
-        </div>
+        <CandidateDetailModal
+          candidate={selected}
+          onClose={() => selectCandidate(null)}
+        />
       )}
-    </div>
-  );
-}
-
-function DetailRow({ label, value }: { label: string; value: string | null }) {
-  return (
-    <div className="flex items-center justify-between gap-4">
-      <dt className="text-slate-500">{label}</dt>
-      <dd className="font-medium text-brand-navy">{value ?? "—"}</dd>
     </div>
   );
 }

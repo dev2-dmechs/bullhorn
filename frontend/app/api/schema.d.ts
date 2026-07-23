@@ -292,10 +292,16 @@ export interface components {
         CandidateSearchRequest: {
             /** Category Ids */
             category_ids?: number[];
+            /** Category Names */
+            category_names?: string[];
             /** Skill Ids */
             skill_ids?: number[];
+            /** Skill Names */
+            skill_names?: string[];
             /** Business Sector Ids */
             business_sector_ids?: number[];
+            /** Business Sector Names */
+            business_sector_names?: string[];
             /** Country Ids */
             country_ids?: number[];
             /** Title */
