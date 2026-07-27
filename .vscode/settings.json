@@ -5,6 +5,7 @@
     "Jobcast",
     "sendouts",
     "sessionmaker",
+    "vercel",
     "VITE"
   ]
 }
