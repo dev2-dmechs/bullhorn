@@ -16,9 +16,6 @@ logging.basicConfig(level=logging.INFO)
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     await init_db()
-    # The persistent asyncio poll loop only makes sense on a long-lived process. On
-    # Vercel each invocation is a fresh, short-lived function — detection there runs
-    # via Vercel Cron hitting GET /job-orders/cron/poll instead (see job_orders.py).
     poll_task = None if get_settings().vercel else asyncio.create_task(job_orders.poll_loop())
     try:
         yield

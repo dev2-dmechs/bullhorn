@@ -1,5 +1,3 @@
-"""All environment access happens here. `os.getenv` anywhere else is a bug."""
-
 from dataclasses import dataclass
 from functools import lru_cache
 
@@ -29,30 +27,16 @@ class Settings(BaseSettings):
     bh_a_client_secret: str = ""
     bh_a_username: str = ""
     bh_a_password: str = ""
-    # Display name for tenant A — its real Bullhorn org name (e.g. "cmcpartners"), not
-    # the generic "Company A" placeholder. Seeded into the `companies` table at startup.
     bh_a_name: str = "Company A"
-
     bh_b_client_id: str = ""
     bh_b_client_secret: str = ""
     bh_b_username: str = ""
     bh_b_password: str = ""
     bh_b_name: str = "Company B"
-
     openai_api_key: str = ""
     openai_model: str = "gpt-5.6-sol"
-
-    # Comma-separated list of allowed CORS origins. Defaults to local Vite dev only;
-    # set to the deployed frontend origin(s) in the serverless environment.
     allowed_origins: str = "http://localhost:5173"
-
-    # Vercel sets VERCEL=1 in every serverless function's environment. Used to skip
-    # starting the in-process background poller, which cannot survive a serverless
-    # function freezing/recycling between invocations — see app/main.py.
     vercel: bool = False
-
-    # Shared secret checked against the `Authorization: Bearer <cron_secret>` header on
-    # the cron-triggered poll endpoint, so it can't be hit by anyone who finds the URL.
     cron_secret: str = ""
 
     @property
