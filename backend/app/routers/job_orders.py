@@ -3,12 +3,13 @@ import logging
 from datetime import UTC, datetime
 from typing import Any
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.bullhorn.live import MAX_JOB_ORDERS, BullhornAuthError, LiveBullhornClient
+from app.config import get_settings
 from app.database import SessionLocal, get_db
 from app.models import JobOrder, JobOrderSeen
 from app.routers.companies import to_job_schema
@@ -93,6 +94,33 @@ async def list_stored_job_orders(
         .order_by(JobOrder.synced_at.desc())
     )
     return [to_job_schema(row.data) for row in rows]
+
+
+@router.get("/cron/poll", include_in_schema=False)
+async def cron_poll(authorization: str = Header(default="")) -> dict[str, list[int]]:
+    """GET-only equivalent of poll_loop()'s body, for Vercel Cron (Cron Jobs only fire GET).
+
+    Vercel Cron requests carry `Authorization: Bearer $CRON_SECRET` automatically when
+    CRON_SECRET is set as a project env var — checked here so the endpoint can't be
+    triggered by anyone who just finds the URL. If cron_secret is unset (e.g. local dev),
+    the check is skipped.
+    """
+    secret = get_settings().cron_secret
+    if secret and authorization != f"Bearer {secret}":
+        raise HTTPException(status_code=401, detail="Unauthorized")
+
+    polled: dict[str, list[int]] = {}
+    for company_id in POLL_COMPANY_IDS:
+        try:
+            async with SessionLocal() as db:
+                new_jobs, _ = await _check_and_record(company_id, db)
+            _record_in_feed(company_id, new_jobs)
+            _last_checked_at[company_id] = datetime.now(UTC)
+            polled[company_id] = [job.id for job in new_jobs]
+        except BullhornAuthError:
+            log.warning("Company %s: cron job order poll failed", company_id)
+            polled[company_id] = []
+    return polled
 
 
 async def poll_loop() -> None:
